@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.divination.liuyao.mapper.TaskMapper">
+    
+    <!-- 结果映射 -->
+    <resultMap id="taskResultMap" type="com.divination.liuyao.pojo.entity.Task">
+        <id property="id" column="id"/>
+        <result property="userId" column="user_id"/>
+        <result property="taskType" column="task_type"/>
+        <result property="status" column="status"/>
+        <result property="preAmount" column="pre_amount"/>
+        <result property="actualAmount" column="actual_amount"/>
+        <result property="isCharged" column="is_charged"/>
+        <result property="requestParams" column="request_params"/>
+        <result property="resultData" column="result_data"/>
+        <result property="errorMsg" column="error_msg"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <result property="completedAt" column="completed_at"/>
+    </resultMap>
+    
+    <!-- 插入新任务 -->
+    <insert id="insert" parameterType="com.divination.liuyao.pojo.entity.Task" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO task (
+            user_id, task_type, status, pre_amount, actual_amount, is_charged,
+            request_params, result_data, error_msg, created_at, updated_at, completed_at
+        ) VALUES (
+            #{userId}, #{taskType}, #{status}, #{preAmount}, #{actualAmount}, #{isCharged},
+            #{requestParams}, #{resultData}, #{errorMsg}, #{createdAt}, #{updatedAt}, #{completedAt}
+        )
+    </insert>
+    
+    <!-- 更新任务状态 -->
+    <update id="updateStatus">
+        UPDATE task
+        SET status = #{status},
+            error_msg = #{errorMsg},
+            updated_at = NOW(),
+            completed_at = CASE WHEN #{status} IN ('COMPLETED', 'FAILED') THEN NOW() ELSE completed_at END
+        WHERE id = #{taskId}
+    </update>
+    
+    <!-- 更新扣费状态 -->
+    <update id="updateChargeStatus">
+        UPDATE task
+        SET is_charged = #{isCharged},
+            updated_at = NOW()
+        WHERE id = #{taskId}
+    </update>
+    
+    <!-- 按ID查找任务 -->
+    <select id="findById" resultMap="taskResultMap">
+        SELECT * FROM task WHERE id = #{id} LIMIT 1
+    </select>
+    
+    <!-- 查找用户最新的任务 -->
+    <select id="findLatestByUserIdAndType" resultMap="taskResultMap">
+        SELECT * FROM task 
+        WHERE user_id = #{userId} 
+        AND task_type = #{taskType} 
+        ORDER BY created_at DESC 
+        LIMIT 1
+    </select>
+    
+    <!-- 更新任务结果和状态 -->
+    <update id="updateResultAndStatus">
+        UPDATE task
+        SET result_data = #{resultData},
+            status = #{status},
+            error_msg = #{errorMsg},
+            updated_at = NOW(),
+            completed_at = CASE WHEN #{status} IN ('COMPLETED', 'FAILED') THEN NOW() ELSE completed_at END
+        WHERE id = #{taskId}
+    </update>
+    
+    <!-- 更新任务结果、状态、实际扣费金额和扣费状态 -->
+    <update id="updateTaskComplete">
+        UPDATE task
+        SET result_data = #{resultData},
+            status = #{status},
+            error_msg = #{errorMsg},
+            actual_amount = #{actualAmount},
+            is_charged = #{isCharged},
+            updated_at = NOW(),
+            completed_at = CASE WHEN #{status} IN ('COMPLETED', 'FAILED') THEN NOW() ELSE completed_at END
+        WHERE id = #{taskId}
+    </update>
+    
+</mapper> 

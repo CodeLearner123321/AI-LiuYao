@@ -1,0 +1,38 @@
+server:
+    port: 8080
+
+spring:
+    application:
+        name: AI-LiuYao
+    main:
+        allow-bean-definition-overriding: true
+
+ai:
+    volcengine:
+        api:
+            key: sk-cc14adbf63d44fd0bda567f778ea7e83
+        model:
+            id: deepseek-r1-250120
+            name: DeepSeek-r1
+        max-tokens: 2000
+        temperature: 0.7
+
+logging:
+    level:
+        root: INFO
+        com.divination.liuyao: DEBUG
+    pattern:
+        console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+        file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    file:
+        name: logs/application.log
+
+jwt:
+    secret: your_very_long_and_secure_secret_key_at_least_64_bytes_long_for_hs512_algorithm
+    token-expiration: 604800
+
+mybatis:
+    configuration:
+        map-underscore-to-camel-case: true
+    type-aliases-package: com.divination.liuyao.entity
+    mapper-locations: classpath:mapper/*.xml

@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.divination.liuyao.mapper.AiLiuyaoHistoryMapper">
+    
+    <!-- 结果映射 -->
+    <resultMap id="historyResultMap" type="com.divination.liuyao.pojo.entity.AiLiuyaoHistory">
+        <id property="id" column="id"/>
+        <result property="historyId" column="history_id"/>
+        <result property="userId" column="user_id"/>
+        <result property="taskId" column="task_id"/>
+        <result property="question" column="question"/>
+        <result property="background" column="background"/>
+        <result property="castType" column="cast_type"/>
+        <result property="timestamp" column="timestamp"/>
+        <result property="number" column="number"/>
+        <result property="castTime" column="cast_time"/>
+        <result property="keyOutcome" column="key_outcome"/>
+        <result property="resultData" column="result_data"/>
+        <result property="createTime" column="create_time"/>
+        <result property="amount" column="amount"/>
+    </resultMap>
+    
+    <!-- 插入新历史记录 -->
+    <insert id="insert" parameterType="com.divination.liuyao.pojo.entity.AiLiuyaoHistory" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO ai_liuyao_history (
+            history_id, user_id, task_id, question, background, cast_type,
+            timestamp, number, cast_time, key_outcome, result_data,
+            create_time, amount
+        ) VALUES (
+            #{historyId}, #{userId}, #{taskId}, #{question}, #{background}, #{castType},
+            #{timestamp}, #{number}, #{castTime}, #{keyOutcome}, #{resultData},
+            #{createTime}, #{amount}
+        )
+    </insert>
+    
+    <!-- 根据ID查询历史记录 -->
+    <select id="findById" resultMap="historyResultMap">
+        SELECT *
+        FROM ai_liuyao_history
+        WHERE id = #{id}
+    </select>
+    
+    <!-- 根据用户ID查询历史记录列表（简化版，只返回基本信息） -->
+    <select id="findQuestionListByUserId" resultMap="historyResultMap">
+        SELECT id, question, key_outcome
+        FROM ai_liuyao_history
+        WHERE user_id = #{userId}
+        ORDER BY create_time DESC
+    </select>
+    
+    <!-- 根据用户ID查询历史记录列表 -->
+    <select id="findByUserId" resultMap="historyResultMap">
+        SELECT *
+        FROM ai_liuyao_history
+        WHERE user_id = #{userId}
+        ORDER BY create_time DESC
+    </select>
+    
+    <!-- 根据任务ID查询历史记录 -->
+    <select id="findByTaskId" resultMap="historyResultMap">
+        SELECT *
+        FROM ai_liuyao_history
+        WHERE task_id = #{taskId}
+    </select>
+    
+    <!-- 更新历史记录 -->
+    <update id="update" parameterType="com.divination.liuyao.pojo.entity.AiLiuyaoHistory">
+        UPDATE ai_liuyao_history
+        SET history_id = #{historyId},
+            user_id = #{userId},
+            task_id = #{taskId},
+            question = #{question},
+            background = #{background},
+            cast_type = #{castType},
+            timestamp = #{timestamp},
+            number = #{number},
+            cast_time = #{castTime},
+            key_outcome = #{keyOutcome},
+            result_data = #{resultData},
+            amount = #{amount}
+        WHERE id = #{id}
+    </update>
+    
+    <!-- 删除历史记录 -->
+    <delete id="deleteById">
+        DELETE FROM ai_liuyao_history
+        WHERE id = #{id}
+    </delete>
+    
+</mapper> 
