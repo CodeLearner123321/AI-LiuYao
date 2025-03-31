@@ -1,12 +1,10 @@
 package com.divination.liuyao.pojo.dto;
 
-import com.divination.liuyao.assemblies.enums.CastType;
-import com.fasterxml.jackson.annotation.JsonFormat;
+import com.divination.liuyao.assemblies.enums.LLMServiceType;
+import com.divination.liuyao.assemblies.enums.ModelType;
 import lombok.Data;
 
 import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotNull;
-import java.time.LocalDateTime;
 
 /**
  * 起卦请求
@@ -30,4 +28,19 @@ public class CastDto extends BaGuaDto{
      */
     @NotBlank(message = "问题不能为空")
     private String background;
+
+    /**
+     * LLM服务类型：volcengine, dashscope
+     */
+    private LLMServiceType llmServiceType;
+
+    /**
+     * 模型类型
+     */
+    private ModelType modelId;
+
+    /**
+     * Key：用于消耗token的凭证
+     */
+    private String apiKey;
 } 

@@ -1,5 +1,7 @@
 package com.divination.liuyao.service;
 
+import com.alibaba.dashscope.exception.InputRequiredException;
+import com.alibaba.dashscope.exception.NoApiKeyException;
 import com.divination.liuyao.assemblies.enums.CastType;
 import com.divination.liuyao.mapper.AiLiuyaoHistoryMapper;
 import com.divination.liuyao.mapper.TaskMapper;
@@ -9,24 +11,16 @@ import com.divination.liuyao.pojo.entity.AiLiuyaoHistory;
 import com.divination.liuyao.pojo.entity.Task;
 import com.divination.liuyao.pojo.model.AiResult;
 import com.divination.liuyao.pojo.model.Hexagram;
+import com.divination.liuyao.service.factory.LLMServiceFactory;
 import com.divination.liuyao.util.BaZiUtil;
 import com.divination.liuyao.util.ConstantUtil;
 import com.divination.liuyao.util.RedisUtil;
 import com.divination.liuyao.util.TaskConstants;
-import com.divination.liuyao.util.UserContextHolder;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.volcengine.ark.runtime.model.completion.chat.ChatCompletionRequest;
-import com.volcengine.ark.runtime.model.completion.chat.ChatMessage;
-import com.volcengine.ark.runtime.model.completion.chat.ChatMessageRole;
-import com.volcengine.ark.runtime.service.ArkService;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.annotation.Propagation;
@@ -38,29 +32,13 @@ import javax.annotation.PostConstruct;
 @Service
 public class AiAnalysisService {
 
-    @Value("${ai.volcengine.api.key}")
-    private String apiKey;
-
-    @Value("${ai.volcengine.model.id}")
-    private String modelId;
-
-    @Value("${ai.volcengine.model.name}")
-    private String modelName;
-
-    @Value("${ai.volcengine.max-tokens:2000}")
-    private int maxTokens;
-
-    @Value("${ai.volcengine.temperature:0.7}")
-    private double temperature;
-
-    private ArkService arkService;
-
     private final TaskMapper taskMapper;
     private final HexagramService hexagramService;
     private final AiLiuyaoHistoryMapper historyMapper;
     private final UserMapper userMapper;
     private final RedisUtil redisUtil;
     private final ObjectMapper objectMapper;
+    private final LLMServiceFactory llmServiceFactory;
 
     public AiAnalysisService(
             TaskMapper taskMapper,
@@ -68,22 +46,15 @@ public class AiAnalysisService {
             AiLiuyaoHistoryMapper historyMapper,
             UserMapper userMapper,
             RedisUtil redisUtil,
-            ObjectMapper objectMapper) {
+            ObjectMapper objectMapper,
+            LLMServiceFactory llmServiceFactory) {
         this.taskMapper = taskMapper;
         this.hexagramService = hexagramService;
         this.historyMapper = historyMapper;
         this.userMapper = userMapper;
         this.redisUtil = redisUtil;
         this.objectMapper = objectMapper;
-    }
-
-    @PostConstruct
-    public void initialize() {
-        // 使用火山引擎SDK初始化服务
-        arkService = ArkService.builder()
-            .apiKey(apiKey)
-            .build();
-        log.info("火山引擎AI服务初始化完成，使用模型: {}", modelName);
+        this.llmServiceFactory = llmServiceFactory;
     }
 
     /**
@@ -103,8 +74,7 @@ public class AiAnalysisService {
             var hexagram = hexagramService.castHexagram(castDto);
 
             // 调用AI进行分析
-            AiResult analysis = this.analyzeHexagram(
-                hexagram, castDto.getQuestion(), castDto.getBackground());
+            AiResult analysis = this.analyzeHexagram(hexagram, castDto);
 
             // 使用ObjectMapper将分析结果转换为JSON
             String resultJson = objectMapper.writeValueAsString(analysis);
@@ -188,7 +158,7 @@ public class AiAnalysisService {
             history.setTimestamp(castDto.getTimestamp());
             history.setNumber(castDto.getNumber());
             history.setCastTime(castDto.getCastTime());
-
+            
             // 设置结果
             history.setKeyOutcome(aiResult.getKeyOutcome());
             history.setResultData(objectMapper.writeValueAsString(aiResult.getText()));
@@ -235,15 +205,18 @@ public class AiAnalysisService {
         }
     }
 
+
     /**
      * 分析卦象（包含问题和背景）
      */
-    public AiResult analyzeHexagram(Hexagram hexagram, String question, String background) throws InterruptedException {
-        log.debug("开始分析卦象，使用火山引擎模型: {}", modelName);
+    public AiResult analyzeHexagram(Hexagram hexagram, CastDto castDto)
+        throws InterruptedException, NoApiKeyException, InputRequiredException {
+        String question = castDto.getQuestion();
+        String background = castDto.getBackground();
 
         try {
             // 系统提示
-            String systemPrompt = "你是一位精通易经六爻预测的大师，熟读《增删卜易》、《古筮真诠》、《卜筮正宗》、《卜筮全书》、《黄金策》、《易冒》、《断易天机》、《火株林》、《京氏易传》《洞林秘诀》、《易林补遗》、《易隐》、《易冒》、《十翼》";
+            String systemPrompt = "你是一位精通易经六爻预测的大师，熟读《增删卜易》、《古筮真诠》、《卜筮正宗》、《卜筮全书》、《黄金策》、《易冒》、《断易天机》、《火株林》、《京氏易传》《洞林秘诀》、《易林补遗》、《易隐》、《易冒》、《十翼》\n";
 
             // 构建用户提示
             StringBuilder prompt = new StringBuilder();
@@ -279,8 +252,8 @@ public class AiAnalysisService {
 
             // 记录开始时间
             long startTime = System.currentTimeMillis();
-            // 调用API获取回复
-            String response = generateText(systemPrompt, prompt.toString());
+            // 调用LLMService获取回复
+            String response = llmServiceFactory.generateText(systemPrompt, prompt.toString(), castDto);
 
             // 计算响应时间（毫秒）转换为秒，保留2位小数
             log.debug("AI响应成功，响应长度: {}, 响应时间{}", response.length(),
@@ -466,58 +439,4 @@ public class AiAnalysisService {
 
         return cleaned;
     }
-
-    /**
-     * 调用火山引擎API生成文本
-     */
-    private String generateText(String systemPrompt, String userPrompt) {
-        if (apiKey == null || apiKey.isEmpty()) {
-            throw new IllegalStateException("火山引擎API密钥未设置，请检查配置。");
-        }
-
-        try {
-            // 创建消息列表
-            final List<ChatMessage> messages = new ArrayList<>();
-
-            // 添加系统消息
-            final ChatMessage systemMessage = ChatMessage.builder()
-                .role(ChatMessageRole.SYSTEM)
-                .content(systemPrompt)
-                .build();
-
-            // 添加用户消息
-            final ChatMessage userMessage = ChatMessage.builder()
-                .role(ChatMessageRole.USER)
-                .content(userPrompt)
-                .build();
-
-            messages.add(systemMessage);
-            messages.add(userMessage);
-
-            // 创建请求
-            ChatCompletionRequest chatCompletionRequest = ChatCompletionRequest.builder()
-                .model(modelId)
-                .messages(messages)
-                .maxTokens(maxTokens)
-                .temperature(temperature)
-                .build();
-
-            log.debug("使用SDK发送请求到火山引擎API，使用模型ID: {}", modelId);
-
-            // 发送请求并获取响应
-            String response = (String) arkService.createChatCompletion(chatCompletionRequest)
-                .getChoices()
-                .get(0)
-                .getMessage()
-                .getContent();
-
-            return response;
-
-        } catch (Exception e) {
-            log.error("调用火山引擎API时发生错误: ", e);
-            throw new RuntimeException("调用火山引擎API时发生错误: " + e.getMessage(), e);
-        }
-    }
-
-
 }

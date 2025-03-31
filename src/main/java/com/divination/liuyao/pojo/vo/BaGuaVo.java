@@ -73,6 +73,9 @@ public class BaGuaVo {
     }
 
     public String getShenShaString(){
+        if( shenSha == null){
+            return "";
+        }
         return "神煞：" + shenSha.stream().filter(Objects::nonNull)
             .filter(s -> !s.isEmpty())
             .collect(Collectors.joining(", "));

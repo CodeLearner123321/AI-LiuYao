@@ -1,25 +1,24 @@
 package com.divination.liuyao.controller;
 
+import com.divination.liuyao.assemblies.enums.LLMServiceType;
 import com.divination.liuyao.pojo.dto.BaGuaDto;
 import com.divination.liuyao.pojo.dto.BaZi;
 import com.divination.liuyao.pojo.dto.CastDto;
-import com.divination.liuyao.pojo.entity.Task;
-import com.divination.liuyao.pojo.model.Hexagram;
 import com.divination.liuyao.pojo.vo.BaGuaVo;
 import com.divination.liuyao.pojo.vo.TaskQueryVO;
 import com.divination.liuyao.result.RespEntity;
-import com.divination.liuyao.service.AiAnalysisService;
 import com.divination.liuyao.service.HexagramService;
 import com.divination.liuyao.service.TaskService;
 import com.divination.liuyao.util.BaZiUtil;
-import com.divination.liuyao.util.RedisUtil;
-import com.divination.liuyao.util.TaskConstants;
 import com.divination.liuyao.util.UserContextHolder;
 import com.divination.liuyao.exception.AuthenticationException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
 
@@ -35,6 +34,9 @@ public class LiuyaoController {
 
     private final HexagramService hexagramService;
     private final TaskService taskService;
+    
+    @Value("${ai.default-llm-service:volcengine}")
+    private String defaultLLMService;
 
     /**
      * 时间转换
@@ -54,11 +56,21 @@ public class LiuyaoController {
      * 1. 创建任务记录并返回任务ID
      * 2. 异步执行AI分析
      * 3. 前端通过任务ID查询结果
+     * 
+     * @param castDto 起卦请求数据，可以通过llmServiceType字段指定使用的LLM服务
      */
     @PostMapping("/cast")
     public RespEntity<Map<String, Object>> castByTimestamp(@Valid @RequestBody CastDto castDto) throws Exception {
         // 设置用户ID
         castDto.setUserId(UserContextHolder.getUserId());
+        
+        // 如果没有指定LLM服务类型，使用默认值
+        if (castDto.getLlmServiceType() == null) {
+            castDto.setLlmServiceType(LLMServiceType.fromvalue(defaultLLMService));
+            log.debug("未指定LLM服务类型，使用默认值: {}", defaultLLMService);
+        } else {
+            log.debug("使用指定的LLM服务类型: {}", castDto.getLlmServiceType());
+        }
         
         return taskService.createLiuyaoTask(castDto);
     }
@@ -94,5 +106,20 @@ public class LiuyaoController {
         BaGuaVo baGuaVo = hexagramService.calculateLiuYao(baGuaDto);
         return RespEntity.ok(baGuaVo);
     }
-
+    
+    /**
+     * 获取可用的LLM服务类型列表
+     */
+    @GetMapping("/llm-services")
+    public RespEntity<Map<String, Object>> getLLMServices() {
+        Map<String, Object> result = new HashMap<>();
+        result.put("default", defaultLLMService);
+        
+        // 获取所有可用的LLM服务类型枚举值
+        result.put("available", Arrays.stream(LLMServiceType.values())
+            .map(LLMServiceType::getValue)
+            .collect(Collectors.toList()));
+        
+        return RespEntity.ok(result);
+    }
 } 

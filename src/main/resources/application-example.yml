@@ -21,12 +21,24 @@ spring:
 
 # AI服务配置示例
 ai:
+    # 默认使用的LLM服务类型：volcengine 或 dashscope
+    default-llm-service: volcengine
+    # 火山引擎配置
     volcengine:
         api:
             key: your_volcengine_api_key
         model:
             id: deepseek-r1-250120
             name: DeepSeek-r1
+        max-tokens: 2000
+        temperature: 0.7
+    # 阿里百练配置
+    dashscope:
+        api:
+            key: your_dashscope_api_key
+        model:
+            id: qwen-max # 或其他可用模型ID
+            name: 通义千问
         max-tokens: 2000
         temperature: 0.7
 
