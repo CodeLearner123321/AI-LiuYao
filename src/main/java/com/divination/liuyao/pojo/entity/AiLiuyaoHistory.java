@@ -68,6 +68,7 @@ public class AiLiuyaoHistory {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime castTime;
 
+
     /**
      * 判词：确定用户所测结果的一行小诗
      */
