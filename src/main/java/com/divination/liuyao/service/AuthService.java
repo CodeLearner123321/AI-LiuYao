@@ -1,5 +1,6 @@
 package com.divination.liuyao.service;
 
+import com.divination.liuyao.pojo.dto.EmailCodeRequest;
 import com.divination.liuyao.pojo.dto.LoginRequest;
 import com.divination.liuyao.pojo.dto.LoginResponse;
 import com.divination.liuyao.pojo.dto.RegisterRequest;
@@ -38,24 +39,27 @@ public class AuthService {
 
     @Autowired
     private RedisUtil redisUtil;
+    
+    @Autowired
+    private EmailService emailService;
 
     public RespEntity<String> register(RegisterRequest registerRequest) {
         try {
-            String phoneNumber = registerRequest.getPhoneNumber();
+            String email = registerRequest.getEmail();
             String code = registerRequest.getAuthCode();
             
-            // 验证短信验证码
-            String redisKey = ConstantUtil.SMS_CODE_KEY + ConstantUtil.SMS_CODE_TYPE_SIGN_IN + phoneNumber;
+            // 验证邮箱验证码
+            String redisKey = ConstantUtil.EMAIL_CODE_KEY + ConstantUtil.SMS_CODE_TYPE_SIGN_IN + email;
             Object storedCode = redisUtil.get(redisKey);
             
             if (storedCode == null || !code.equals(storedCode.toString())) {
-                log.warn("注册验证码错误或已过期，手机号: {}", phoneNumber);
-                return RespEntity.error("验证码错误或已过期（验证码有效期为1分钟）");
+                log.warn("注册验证码错误或已过期，邮箱: {}", email);
+                return RespEntity.error("验证码错误或已过期（验证码有效期为5分钟）");
             }
-
-            // 检查用户名是否已存在
-            if (userService.findByPhoneNumber(phoneNumber).isPresent()) {
-                return RespEntity.error("该手机号已注册");
+            
+            // 检查邮箱是否已注册
+            if (userService.findByEmail(email).isPresent()) {
+                return RespEntity.error("该邮箱已注册");
             }
             
             // 检查账号是否已存在
@@ -65,7 +69,11 @@ public class AuthService {
             
             // 创建新用户
             User user = new User();
-            user.setPhoneNumber(phoneNumber);
+            user.setEmail(email);
+            // 如果提供了手机号，也保存下来
+            if (registerRequest.getPhoneNumber() != null && !registerRequest.getPhoneNumber().isEmpty()) {
+                user.setPhoneNumber(registerRequest.getPhoneNumber());
+            }
             user.setUserName(registerRequest.getUserName());
 
             // 生成盐值并哈希密码
@@ -156,6 +164,67 @@ public class AuthService {
     }
     
     /**
+     * 发送邮箱验证码
+     * 1. 验证码过期时间为5分钟
+     * 2. 对于同一个邮箱，不同的请求类型，一天最多支持发送5次
+     */
+    public RespEntity<String> sendEmailCode(EmailCodeRequest emailCodeRequest) {
+        // 参数校验
+        if(!emailCodeRequest.parameterCheck()){
+            return RespEntity.error("参数有误!");
+        }
+
+        try {
+            String email = emailCodeRequest.getEmail();
+            String requestType = emailCodeRequest.getRequestType();
+            
+            // 验证码的Redis键
+            String redisKey = ConstantUtil.EMAIL_CODE_KEY + requestType + email;
+            
+            // 检查是否已经发送过验证码且尚未过期
+            if(redisUtil.hasKey(redisKey)){
+                return RespEntity.error("验证码已发送，请勿重复操作");
+            }
+            
+            // 检查当天发送次数限制
+            // 计数器键格式：EMAIL_COUNTER:请求类型:邮箱:日期(yyyyMMdd)
+            String today = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+            String counterKey = ConstantUtil.EMAIL_COUNTER_KEY + requestType + ":" + email + ":" + today;
+            
+            // 获取当前计数
+            Object countObj = redisUtil.get(counterKey);
+            int count = 0;
+            if (countObj != null) {
+                count = Integer.parseInt(countObj.toString());
+            }
+            
+            // 检查是否超过每日最大发送次数
+            if (count >= ConstantUtil.EMAIL_MAX_DAILY_COUNT) {
+                return RespEntity.error("今日验证码发送次数已达上限，请明天再试");
+            }
+            
+            // 生成6位随机验证码
+            String code = String.format("%06d", (int)(Math.random() * 1000000));
+            log.info("向邮箱 {} 发送验证码: {} 业务类型：{}", email, code, requestType);
+            
+            // 调用邮件服务发送验证码
+            emailService.sendVerificationCode(email, code);
+            
+            // 设置验证码，过期时间为5分钟
+            redisUtil.set(redisKey, code, ConstantUtil.EMAIL_CODE_EXPIRE_TIME);
+            
+            // 增加计数器并设置过期时间（当天剩余时间）
+            long secondsLeftToday = calculateSecondsUntilEndOfDay();
+            redisUtil.set(counterKey, count + 1, secondsLeftToday);
+            
+            return RespEntity.ok("验证码发送成功");
+        } catch (Exception e) {
+            log.error("发送邮箱验证码失败: {}", e.getMessage(), e);
+            throw new AuthenticationException("验证码发送失败: " + e.getMessage(), 500);
+        }
+    }
+    
+    /**
      * 发送短信验证码
      * 1. 验证码过期时间为1分钟
      * 2. 对于同一个手机号，不同的请求类型，一天最多支持发送3次
@@ -206,7 +275,6 @@ public class AuthService {
             
             // 增加计数器并设置过期时间（当天剩余时间）
             long secondsLeftToday = calculateSecondsUntilEndOfDay();
-            // TODO: 这里好像有一个报错，有空看看
             redisUtil.set(counterKey, count + 1, secondsLeftToday);
             
             return RespEntity.ok("验证码发送成功");
@@ -280,7 +348,7 @@ public class AuthService {
             return RespEntity.ok(user.getUserName());
         } catch (Exception e) {
             log.error("修改密码失败: {}", e.getMessage(), e);
-            return RespEntity.error("修改密码失败: " + e.getMessage());
+            return RespEntity.error(e.getMessage());
         }
     }
 }

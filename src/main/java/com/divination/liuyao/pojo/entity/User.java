@@ -10,6 +10,7 @@ public class User {
     private String userName;  // 账号
     private String passWord;
     private String phoneNumber;
+    private String email;      // 邮箱
     private String salt;
     //是否是vip用户 0：否 ，1：是
     private Integer isVip;

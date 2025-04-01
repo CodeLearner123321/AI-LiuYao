@@ -8,6 +8,7 @@
         <result property="userName" column="user_name"/>
         <result property="passWord" column="pass_word"/>
         <result property="phoneNumber" column="phone_number"/>
+        <result property="email" column="email"/>
         <result property="salt" column="salt"/>
         <result property="isVip" column="is_vip"/>
         <result property="balance" column="balance"/>
@@ -19,6 +20,11 @@
     <!-- 根据手机号查询用户 -->
     <select id="findByPhoneNumber" resultMap="userResultMap">
         SELECT * FROM user WHERE phone_number = #{phoneNumber} LIMIT 1
+    </select>
+    
+    <!-- 根据邮箱查询用户 -->
+    <select id="findByEmail" resultMap="userResultMap">
+        SELECT * FROM user WHERE email = #{email} LIMIT 1
     </select>
     
     <!-- 根据用户名查询用户 -->
@@ -34,10 +40,10 @@
     <!-- 插入新用户 -->
     <insert id="insert" parameterType="com.divination.liuyao.pojo.entity.User" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO user (
-            user_name, pass_word, phone_number, salt, is_vip, balance, 
+            user_name, pass_word, phone_number, email, salt, is_vip, balance, 
             frozen_balance, created_at, updated_at
         ) VALUES (
-            #{userName}, #{passWord}, #{phoneNumber}, #{salt}, #{isVip}, #{balance}, 
+            #{userName}, #{passWord}, #{phoneNumber}, #{email}, #{salt}, #{isVip}, #{balance}, 
             #{frozenBalance, jdbcType=DECIMAL}, #{createdAt}, #{updatedAt}
         )
     </insert>
@@ -48,6 +54,7 @@
         SET user_name = #{userName},
             pass_word = #{passWord},
             phone_number = #{phoneNumber},
+            email = #{email},
             salt = #{salt},
             is_vip = #{isVip},
             balance = #{balance},

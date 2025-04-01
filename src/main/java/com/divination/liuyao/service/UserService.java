@@ -17,6 +17,10 @@ public class UserService {
         return userMapper.findByPhoneNumber(phoneNumber);
     }
     
+    public Optional<User> findByEmail(String email) {
+        return userMapper.findByEmail(email);
+    }
+    
     public Optional<User> findByUserName(String userName) {
         return userMapper.findByUserName(userName);
     }

@@ -1,5 +1,6 @@
 package com.divination.liuyao.controller;
 
+import com.divination.liuyao.pojo.dto.EmailCodeRequest;
 import com.divination.liuyao.pojo.dto.LoginRequest;
 import com.divination.liuyao.pojo.dto.LoginResponse;
 import com.divination.liuyao.pojo.dto.RegisterRequest;
@@ -49,11 +50,21 @@ public class AuthController {
     
     /**
      * 发送短信验证码
-     * 用于注册接口
+     * 用于注册或其他操作
+     * 废弃接口
      */
-    @PostMapping("/register/sms/code")
+    @PostMapping("/sms/code")
     public RespEntity<String> sendSmsCode(@Valid @RequestBody SmsCodeRequest request) {
         return authService.sendSmsCode(request);
+    }
+    
+    /**
+     * 发送邮箱验证码
+     * 用于注册或其他操作
+     */
+    @PostMapping("/email/code")
+    public RespEntity<String> sendEmailCode(@Valid @RequestBody EmailCodeRequest request) {
+        return authService.sendEmailCode(request);
     }
 
     /**

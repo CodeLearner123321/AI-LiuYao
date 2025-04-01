@@ -13,7 +13,7 @@
     <artifactId>AI-LiuYao</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>AI-LiuYao</name>
-    <description>AI六爻预测系统</description>
+    <description>爻算云鉴</description>
 
     <properties>
         <java.version>11</java.version>
@@ -146,6 +146,12 @@
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
             <version>31.1-jre</version>
+        </dependency>
+
+        <!-- 添加Spring Boot邮件支持 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-mail</artifactId>
         </dependency>
     </dependencies>
 

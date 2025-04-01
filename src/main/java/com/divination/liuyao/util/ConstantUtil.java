@@ -9,8 +9,14 @@ public class ConstantUtil {
     //短信验证码Redis键前缀
     public final static String SMS_CODE_KEY = "SMS_CODE_KEY:";
 
+    //邮箱验证码Redis键前缀
+    public final static String EMAIL_CODE_KEY = "EMAIL_CODE_KEY:";
+
     //短信验证码计数器Redis键前缀，用于限制每日发送次数
     public final static String SMS_COUNTER_KEY = "SMS_COUNTER:";
+
+    //邮箱验证码计数器Redis键前缀，用于限制每日发送次数
+    public final static String EMAIL_COUNTER_KEY = "EMAIL_COUNTER:";
 
     //注册业务短信验证码
     public final static String SMS_CODE_TYPE_SIGN_IN = "SIGN_IN";
@@ -21,8 +27,14 @@ public class ConstantUtil {
     //短信验证码过期时间(秒)
     public final static int SMS_CODE_EXPIRE_TIME = 60;  // 1分钟
 
+    //邮箱验证码过期时间(秒)
+    public final static int EMAIL_CODE_EXPIRE_TIME = 300;  // 5分钟
+
     //短信验证码每日最大发送次数
     public final static int SMS_MAX_DAILY_COUNT = 3;
+
+    //邮箱验证码每日最大发送次数
+    public final static int EMAIL_MAX_DAILY_COUNT = 5;
 
     public final static String AI_ERROR_RESULT = "该问题或背景有误，请明确问题后在进行分析！";
 

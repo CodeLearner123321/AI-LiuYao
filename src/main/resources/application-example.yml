@@ -18,6 +18,22 @@ spring:
         port: 6379
         password: your_redis_password
         database: 0
+    # 邮箱配置
+    mail:
+        host: smtp.qq.com
+        port: 465
+        username: your_qq_email@qq.com
+        password: your_qq_email_authorization_code  # QQ邮箱授权码，非QQ密码
+        protocol: smtps
+        properties:
+            mail:
+                smtp:
+                    auth: true
+                    starttls:
+                        enable: true
+                        required: true
+                    ssl:
+                        enable: true
 
 # AI服务配置示例
 ai:
@@ -41,6 +57,11 @@ ai:
             name: 通义千问
         max-tokens: 2000
         temperature: 0.7
+
+# 邮件服务配置
+email:
+    from: your_qq_email@qq.com  # 发件人邮箱，应与spring.mail.username一致
+    personal: 爻算云鉴  # 发件人显示名称
 
 logging:
     level:
