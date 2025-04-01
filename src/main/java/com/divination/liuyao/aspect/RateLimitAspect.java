@@ -44,44 +44,44 @@ public class RateLimitAspect {
         // 获取请求方法
         MethodSignature signature = (MethodSignature) point.getSignature();
         Method method = signature.getMethod();
-        
+
         // 获取注解
         RateLimit rateLimit = method.getAnnotation(RateLimit.class);
         if (rateLimit == null) {
             return point.proceed();
         }
-        
+
         // 获取当前用户ID
         Long userId = UserContextHolder.getUserId();
         if (userId == null) {
             // 如果没有登录，则尝试获取请求IP地址
             userId = getUserIpAsLong();
         }
-        
+
         // 构建限流的key
         String limitKey = buildLimitKey(method, rateLimit, userId);
-        
+
         // 获取限流参数
         int period = rateLimit.period();
         TimeUnit timeUnit = rateLimit.timeUnit();
         int maxRequests = rateLimit.maxRequests();
-        
+
         // 转换为秒
         long seconds = timeUnit.toSeconds(period);
-        
+
         // 获取当前计数
         Object countObj = redisUtil.get(limitKey);
         int count = 0;
         if (countObj != null) {
             count = Integer.parseInt(countObj.toString());
         }
-        
+
         // 判断是否超出限制
         if (count >= maxRequests) {
             log.warn("用户[{}]访问[{}]超出限制，限制为{}次/{}秒", userId, method.getName(), maxRequests, seconds);
             throw new RateLimitException(rateLimit.message());
         }
-        
+
         // 正常访问，计数器+1
         if (count == 0) {
             // 第一次访问，设置过期时间
@@ -90,7 +90,7 @@ public class RateLimitAspect {
             // 非第一次访问，计数器+1
             redisUtil.incr(limitKey, 1);
         }
-        
+
         // 执行原方法
         return point.proceed();
     }

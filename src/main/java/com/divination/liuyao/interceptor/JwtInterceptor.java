@@ -13,6 +13,7 @@ import org.springframework.web.servlet.HandlerInterceptor;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 
 @Slf4j
 @Component
@@ -26,15 +27,20 @@ public class JwtInterceptor implements HandlerInterceptor {
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
-        String authHeader = request.getHeader("Authorization");
-        
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            throw new AuthenticationException("未提供有效的认证令牌", 401);
+        // OPTIONS请求直接放行（解决CORS预检问题）
+        if ("OPTIONS".equals(request.getMethod())) {
+            return true;
         }
         
-        String token = authHeader.substring(7);
-        
         try {
+            String authHeader = request.getHeader("Authorization");
+            
+            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                return handleAuthError(response, 401, "未提供有效的认证令牌");
+            }
+            
+            String token = authHeader.substring(7);
+            
             // 验证令牌
             if (tokenUtil.validateToken(token)) {
                 Long userId = tokenUtil.extractUserId(token);
@@ -59,15 +65,30 @@ public class JwtInterceptor implements HandlerInterceptor {
                     return true;
                 }
             }
-            response.setStatus(401);
             throw new AuthenticationException("无效的认证令牌", 401);
         } catch (Exception e) {
-            response.setStatus(401);
             log.error("令牌验证失败: {}", e.getMessage(), e);
-            throw new AuthenticationException("登录验证失败: " + e.getMessage(), 401);
+            return handleAuthError(response, 401, "登录验证失败: " + e.getMessage());
         }
     }
-    
+
+    /**
+     * 处理认证错误，返回统一格式的JSON响应
+     *
+     * @param response HTTP响应对象
+     * @param status 状态码
+     * @param message 错误信息
+     * @return false 表示中断请求处理
+     */
+    private boolean handleAuthError(HttpServletResponse response, int status, String message) throws IOException {
+        response.setStatus(status);
+        response.setContentType("application/json;charset=UTF-8");
+        // 构建与RespEntity格式一致的JSON响应
+        String jsonResponse = "{\"code\":" + status + ",\"message\":\"" + message + "\",\"data\":null}";
+        response.getWriter().write(jsonResponse);
+        return false;
+    }
+
     @Override
     public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) {
         // 请求完成后清除ThreadLocal，防止内存泄漏

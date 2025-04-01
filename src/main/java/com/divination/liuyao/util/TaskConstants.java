@@ -27,8 +27,8 @@ public class TaskConstants {
     // Redis中任务锁的前缀
     public static final String TASK_LOCK_PREFIX = "TASK:LOCK:";
     
-    // Redis中任务锁的过期时间（4分钟）
-    public static final int TASK_LOCK_EXPIRE_TIME = 4 * 60;
+    // Redis中任务锁的过期时间（100秒）
+    public static final int TASK_LOCK_EXPIRE_TIME = 100;
     
     // 任务每个单位的价格（如每次起卦）
     public static final BigDecimal LIUYAO_PRICE = new BigDecimal("2");

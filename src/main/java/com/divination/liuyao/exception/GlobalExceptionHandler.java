@@ -33,8 +33,9 @@ public class GlobalExceptionHandler {
      * 处理认证异常
      */
     @ExceptionHandler(AuthenticationException.class)
-    public RespEntity<Void> handleAuthenticationException(AuthenticationException e) {
-        log.warn("认证异常: {}", e.getMessage());
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
+    public RespEntity<Void> handleAuthenticationException(AuthenticationException e, HttpServletRequest request) {
+        log.warn("认证异常: {} 请求路径: {}", e.getMessage(), request.getRequestURI());
         return RespEntity.error(e.getCode(), e.getMessage());
     }
 
@@ -55,8 +56,8 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(Exception.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    public RespEntity<Void> handleException(Exception e) {
-        log.error("未处理的异常", e);
+    public RespEntity<Void> handleException(Exception e, HttpServletRequest request) {
+        log.error("未处理的异常，请求路径: {}", request.getRequestURI(), e);
         return RespEntity.error(500, "服务器内部错误");
     }
 

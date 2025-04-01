@@ -133,6 +133,8 @@ public class TaskService {
                     
                     log.info("已将任务 {} 标记为失败状态", task.getId());
                 } catch (Exception ex) {
+                    // 发生异常，释放Redis锁
+                    redisUtil.del(lockKey);
                     log.error("更新任务状态失败: {}", ex.getMessage(), ex);
                 }
             }
