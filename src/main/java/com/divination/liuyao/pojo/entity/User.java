@@ -28,10 +28,12 @@ public class User {
      * 返回加密的手机号
      * @return
      */
-    public String getEncryptedPhoneNumber(){
-        if( this.phoneNumber == null || this.phoneNumber.isEmpty()){
+    public String getEncryptedEmail(){
+        if( this.email == null || this.email.isEmpty()){
             return "------------";
         }
-        return phoneNumber.substring(0,3) + "****" + phoneNumber.substring(7,10);
+        int i = email.indexOf('@');
+
+        return email.substring(0,i) + "@XXXXXXX";
     }
 }

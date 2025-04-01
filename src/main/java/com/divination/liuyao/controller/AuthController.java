@@ -51,7 +51,7 @@ public class AuthController {
     /**
      * 发送短信验证码
      * 用于注册或其他操作
-     * 废弃接口
+     * 废弃接口 前端已不访问
      */
     @PostMapping("/sms/code")
     public RespEntity<String> sendSmsCode(@Valid @RequestBody SmsCodeRequest request) {
@@ -77,7 +77,7 @@ public class AuthController {
 
     /**
      * 修改密码
-     * 通过验证码验证后修改密码
+     * 通过邮箱验证码验证后修改密码
      */
     @PostMapping("/update/password")
     public RespEntity<String> updatePassword(@Valid @RequestBody UpdatePasswordRequest request) {

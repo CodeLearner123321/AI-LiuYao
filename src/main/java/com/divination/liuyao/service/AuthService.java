@@ -14,6 +14,7 @@ import com.divination.liuyao.util.PasswordUtil;
 import com.divination.liuyao.util.RedisUtil;
 import com.divination.liuyao.util.TokenUtil;
 import com.divination.liuyao.util.UserContextHolder;
+import java.math.BigDecimal;
 import javax.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -85,6 +86,7 @@ public class AuthService {
             user.setIsVip(0); // 默认非VIP用户
             user.setCreatedAt(LocalDateTime.now());
             user.setUpdatedAt(LocalDateTime.now());
+            user.setBalance(BigDecimal.valueOf(2000));
             
             // 保存用户
             userService.save(user);
@@ -138,7 +140,7 @@ public class AuthService {
 
             LoginResponse loginResponse = new LoginResponse();
             loginResponse.setUsername(loginRequest.getUsername());
-            loginResponse.setPhone(user.getEncryptedPhoneNumber());
+            loginResponse.setEmail(user.getEncryptedEmail());
             loginResponse.setToken(token);
 
             log.debug("用户登录UserId: {}", user.getId());
@@ -215,7 +217,8 @@ public class AuthService {
             
             // 增加计数器并设置过期时间（当天剩余时间）
             long secondsLeftToday = calculateSecondsUntilEndOfDay();
-            redisUtil.set(counterKey, count + 1, secondsLeftToday);
+            // 将整数转换为字符串再存入Redis
+            redisUtil.set(counterKey, String.valueOf(count + 1), secondsLeftToday);
             
             return RespEntity.ok("验证码发送成功");
         } catch (Exception e) {
@@ -275,7 +278,8 @@ public class AuthService {
             
             // 增加计数器并设置过期时间（当天剩余时间）
             long secondsLeftToday = calculateSecondsUntilEndOfDay();
-            redisUtil.set(counterKey, count + 1, secondsLeftToday);
+            // 将整数转换为字符串再存入Redis
+            redisUtil.set(counterKey, String.valueOf(count + 1), secondsLeftToday);
             
             return RespEntity.ok("验证码发送成功");
         } catch (Exception e) {
@@ -302,29 +306,29 @@ public class AuthService {
 
     /**
      * 修改密码
-     * 通过验证码验证后修改密码
-     * @param request 修改密码请求，包含手机号、新密码和验证码
+     * 通过邮箱验证码验证后修改密码
+     * @param request 修改密码请求，包含邮箱、新密码和验证码
      * @return 结果，成功时返回用户账号
      */
     public RespEntity<String> updatePassword(UpdatePasswordRequest request) {
         try {
-            String phoneNumber = request.getPhoneNumber();
+            String email = request.getEmail();
             String authCode = request.getAuthCode();
             String newPassword = request.getNewPassword();
             
-            // 验证短信验证码
-            String redisKey = ConstantUtil.SMS_CODE_KEY + ConstantUtil.SMS_CODE_TYPE_UPDATE + phoneNumber;
+            // 验证邮箱验证码
+            String redisKey = ConstantUtil.EMAIL_CODE_KEY + ConstantUtil.SMS_CODE_TYPE_UPDATE + email;
             Object storedCode = redisUtil.get(redisKey);
             
             if (storedCode == null || !authCode.equals(storedCode.toString())) {
-                log.warn("修改密码验证码错误或已过期，手机号: {}", phoneNumber);
-                return RespEntity.error("验证码错误或已过期（验证码有效期为1分钟）");
+                log.warn("修改密码验证码错误或已过期，邮箱: {}", email);
+                return RespEntity.error("验证码错误或已过期（验证码有效期为5分钟）");
             }
             
-            // 根据手机号查找用户
-            Optional<User> userOptional = userService.findByPhoneNumber(phoneNumber);
+            // 根据邮箱查找用户
+            Optional<User> userOptional = userService.findByEmail(email);
             if (!userOptional.isPresent()) {
-                return RespEntity.error("该手机号未注册");
+                return RespEntity.error("该邮箱未注册");
             }
             
             User user = userOptional.get();

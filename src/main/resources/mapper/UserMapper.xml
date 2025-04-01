@@ -40,11 +40,9 @@
     <!-- 插入新用户 -->
     <insert id="insert" parameterType="com.divination.liuyao.pojo.entity.User" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO user (
-            user_name, pass_word, phone_number, email, salt, is_vip, balance, 
-            frozen_balance, created_at, updated_at
+            user_name, pass_word, email, salt, is_vip, balance, created_at, updated_at
         ) VALUES (
-            #{userName}, #{passWord}, #{phoneNumber}, #{email}, #{salt}, #{isVip}, #{balance}, 
-            #{frozenBalance, jdbcType=DECIMAL}, #{createdAt}, #{updatedAt}
+            #{userName}, #{passWord}, #{email}, #{salt}, #{isVip}, #{balance}, #{createdAt}, #{updatedAt}
         )
     </insert>
     
