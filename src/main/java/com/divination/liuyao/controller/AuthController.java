@@ -73,9 +73,9 @@ public class AuthController {
 
     /**
      * 返回用户余额
+     * Redis缓存优化，过期时间1分钟
      */
     @GetMapping("/get/balance")
-    @RateLimit(period = 60, timeUnit = TimeUnit.SECONDS, maxRequests = 5, message = "验证码发送过于频繁，请5分钟后再试")
     public RespEntity<String> getBalance() {
         return authService.getBalance();
     }

@@ -12,6 +12,15 @@ public class ConstantUtil {
     //邮箱验证码Redis键前缀
     public final static String EMAIL_CODE_KEY = "EMAIL_CODE_KEY:";
 
+    //用户余额Redis键前缀
+    public final static String USER_BALANCE_KEY = "user:balance:";
+    
+    //用户余额分布式锁键前缀
+    public final static String USER_BALANCE_LOCK_KEY = "lock:user:balance:";
+    
+    //用户余额缓存过期时间(秒)
+    public final static int USER_BALANCE_EXPIRE_TIME = 60;  // 1分钟
+
     //短信验证码计数器Redis键前缀，用于限制每日发送次数
     public final static String SMS_COUNTER_KEY = "SMS_COUNTER:";
 

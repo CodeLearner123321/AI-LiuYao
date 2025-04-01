@@ -296,10 +296,70 @@ public class AuthService {
         return java.time.Duration.between(now, endOfDay).getSeconds() + 1; // 加1秒确保包含23:59:59
     }
 
+    /**
+     * 获取用户余额
+     * 使用Redis缓存优化，避免频繁访问数据库
+     * 1. 首先查询Redis缓存
+     * 2. 缓存未命中时，使用SETNX加锁，防止缓存穿透
+     * 3. 从数据库获取数据并更新缓存，设置1分钟过期时间
+     */
     public RespEntity<String> getBalance() {
+        // 获取当前用户ID
         Long userId = UserContextHolder.getUserId();
-        Optional<User> byId = userService.findById(userId);
-        return byId.map(user -> RespEntity.ok(user.getBalance().toString())).orElseGet(() -> RespEntity.error("该用户不存在"));
+        if (userId == null) {
+            return RespEntity.error("用户未登录");
+        }
+        
+        // 构建Redis缓存key
+        String cacheKey = ConstantUtil.USER_BALANCE_KEY + userId;
+        // 构建分布式锁key
+        String lockKey = ConstantUtil.USER_BALANCE_LOCK_KEY + userId;
+        
+        try {
+            // 1. 先从Redis查询
+            Object cachedBalance = redisUtil.get(cacheKey);
+            if (cachedBalance != null) {
+                // 缓存命中，直接返回
+                return RespEntity.ok(cachedBalance.toString());
+            }
+            
+            // 2. 缓存未命中，使用SETNX尝试获取分布式锁，防止缓存穿透
+            boolean lockAcquired = redisUtil.setIfAbsent(lockKey, "1", 10); // 锁有效期10秒
+            
+            if (!lockAcquired) {
+                // 未获取到锁，说明有其他线程正在查询数据库并更新缓存
+                // 短暂等待后重新查询缓存
+                Thread.sleep(100);
+                Object retryCache = redisUtil.get(cacheKey);
+                if (retryCache != null) {
+                    return RespEntity.ok(retryCache.toString());
+                }
+                // 如果仍然没有缓存，返回临时错误，避免所有请求都去查询数据库
+                return RespEntity.error("系统繁忙，请稍后再试");
+            }
+            
+            try {
+                // 3. 获取到锁，查询数据库
+                Optional<User> userOpt = userService.findById(userId);
+                if (!userOpt.isPresent()) {
+                    return RespEntity.error("该用户不存在");
+                }
+                
+                // 4. 更新Redis缓存，设置1分钟过期时间
+                String balance = userOpt.get().getBalance().toString();
+                redisUtil.set(cacheKey, balance, ConstantUtil.USER_BALANCE_EXPIRE_TIME);
+                
+                log.debug("用户[{}]余额已从数据库加载并缓存: {}", userId, balance);
+                return RespEntity.ok(balance);
+                
+            } finally {
+                // 释放锁
+                redisUtil.del(lockKey);
+            }
+        } catch (Exception e) {
+            log.error("获取用户余额失败", e);
+            return RespEntity.error("获取余额失败: " + e.getMessage());
+        }
     }
 
     /**

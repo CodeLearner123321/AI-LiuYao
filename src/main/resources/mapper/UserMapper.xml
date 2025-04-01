@@ -36,14 +36,14 @@
     <select id="findById" resultMap="userResultMap">
         SELECT * FROM user WHERE id = #{id} LIMIT 1
     </select>
-    
+
     <!-- 插入新用户 -->
     <insert id="insert" parameterType="com.divination.liuyao.pojo.entity.User" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO user (
             user_name, pass_word, email, salt, is_vip, balance, created_at, updated_at
         ) VALUES (
-            #{userName}, #{passWord}, #{email}, #{salt}, #{isVip}, #{balance}, #{createdAt}, #{updatedAt}
-        )
+                     #{userName}, #{passWord}, #{email}, #{salt}, #{isVip}, #{balance}, #{createdAt}, #{updatedAt}
+                 )
     </insert>
     
     <!-- 更新用户信息 -->
