@@ -1,10 +1,12 @@
 package com.divination.liuyao.controller;
 
+import com.divination.liuyao.annotation.RateLimit;
 import com.divination.liuyao.exception.AuthenticationException;
 import com.divination.liuyao.pojo.vo.AiLiuyaoHistoryVO;
 import com.divination.liuyao.result.RespEntity;
 import com.divination.liuyao.service.AiLiuyaoHistoryService;
 import com.divination.liuyao.util.UserContextHolder;
+import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
@@ -26,6 +28,7 @@ public class AiLiuyaoHistoryController {
      * 获取当前用户的历史记录
      */
     @GetMapping
+    @RateLimit(period = 60, timeUnit = TimeUnit.SECONDS, maxRequests = 10, message = "获取历史记录过于频繁，请稍后再试！")
     public RespEntity<List<AiLiuyaoHistoryVO>> getHistory() {
         // 验证用户是否登录
         Long userId = UserContextHolder.getUserId();
@@ -43,6 +46,7 @@ public class AiLiuyaoHistoryController {
      * @return 历史记录详情
      */
     @GetMapping("/{historyId}")
+    @RateLimit(period = 60, timeUnit = TimeUnit.SECONDS, maxRequests = 24, message = "操作过于频繁，请稍后再试！")
     public RespEntity<AiLiuyaoHistoryVO> getHistoryById(@PathVariable Long historyId) {
         // 验证用户是否登录
         Long userId = UserContextHolder.getUserId();

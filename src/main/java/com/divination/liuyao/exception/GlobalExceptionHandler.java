@@ -12,14 +12,30 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 
 import com.divination.liuyao.result.RespEntity;
 
+/**
+ * 全局异常处理器
+ */
 @Slf4j
 @ControllerAdvice
 public class GlobalExceptionHandler {
 
+    /**
+     * 处理限流异常
+     */
+    @ExceptionHandler(RateLimitException.class)
+    @ResponseStatus(HttpStatus.TOO_MANY_REQUESTS)
+    public RespEntity<Void> handleRateLimitException(RateLimitException e) {
+        log.warn("触发限流: {}", e.getMessage());
+        return RespEntity.error(e.getCode(), e.getMessage());
+    }
+
+    /**
+     * 处理认证异常
+     */
     @ExceptionHandler(AuthenticationException.class)
-    public RespEntity<Void> handleAuthenticationException(AuthenticationException ex) {
-        log.error("认证异常: {}", ex.getMessage(), ex);
-        return RespEntity.error(HttpStatus.UNAUTHORIZED.value(), ex.getMessage());
+    public RespEntity<Void> handleAuthenticationException(AuthenticationException e) {
+        log.warn("认证异常: {}", e.getMessage());
+        return RespEntity.error(e.getCode(), e.getMessage());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -34,10 +50,14 @@ public class GlobalExceptionHandler {
         return RespEntity.error(HttpStatus.BAD_REQUEST.value(), errorMessage.toString());
     }
 
+    /**
+     * 处理其他异常
+     */
     @ExceptionHandler(Exception.class)
-    public RespEntity<Void> handleGenericException(Exception ex) {
-        log.error("服务器异常: {}", ex.getMessage(), ex);
-        return RespEntity.error(HttpStatus.INTERNAL_SERVER_ERROR.value(), "服务器内部错误");
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    public RespEntity<Void> handleException(Exception e) {
+        log.error("未处理的异常", e);
+        return RespEntity.error(500, "服务器内部错误");
     }
 
     @ExceptionHandler(IllegalArgumentException.class)

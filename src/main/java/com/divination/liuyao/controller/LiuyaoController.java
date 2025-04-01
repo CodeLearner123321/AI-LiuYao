@@ -1,5 +1,6 @@
 package com.divination.liuyao.controller;
 
+import com.divination.liuyao.annotation.RateLimit;
 import com.divination.liuyao.assemblies.enums.LLMServiceType;
 import com.divination.liuyao.pojo.dto.BaGuaDto;
 import com.divination.liuyao.pojo.dto.BaZi;
@@ -15,6 +16,7 @@ import com.divination.liuyao.exception.AuthenticationException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.time.LocalDateTime;
 import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -44,6 +46,7 @@ public class LiuyaoController {
      * @return
      */
     @GetMapping("/calculate")
+    @RateLimit(period = 60, timeUnit = TimeUnit.SECONDS, maxRequests = 300, message = "操作过于频繁，请稍后再试！")
     public RespEntity<BaZi> calculateBazi(
         @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime dateTime) {
         BaZi response = BaZiUtil.baziConvertByTime(dateTime);
@@ -60,6 +63,7 @@ public class LiuyaoController {
      * @param castDto 起卦请求数据，可以通过llmServiceType字段指定使用的LLM服务
      */
     @PostMapping("/cast")
+    @RateLimit(period = 30, timeUnit = TimeUnit.SECONDS, maxRequests = 2, message = "操作过于频繁，请稍后再试！")
     public RespEntity<Map<String, Object>> castByTimestamp(@Valid @RequestBody CastDto castDto) throws Exception {
         // 设置用户ID
         castDto.setUserId(UserContextHolder.getUserId());
@@ -82,6 +86,7 @@ public class LiuyaoController {
      * @return 任务状态和结果
      */
     @GetMapping("/task/{taskId}")
+    @RateLimit(period = 60, timeUnit = TimeUnit.SECONDS, maxRequests = 25, message = "操作过于频繁，请稍后再试！")
     public RespEntity<TaskQueryVO> getTaskResult(
             @PathVariable Long taskId,
             @RequestParam(value = "taskType", defaultValue = "LIUYAO") String taskType) throws JsonProcessingException {
@@ -102,24 +107,9 @@ public class LiuyaoController {
      * 前端可能传递：值 或者 时间戳
      */
     @PostMapping("/generate/liuyao")
+    @RateLimit(period = 60, timeUnit = TimeUnit.SECONDS, maxRequests = 24, message = "操作过于频繁，请稍后再试！")
     public RespEntity<BaGuaVo> calculateLiuYao(@Valid @RequestBody BaGuaDto baGuaDto) {
         BaGuaVo baGuaVo = hexagramService.calculateLiuYao(baGuaDto);
         return RespEntity.ok(baGuaVo);
-    }
-    
-    /**
-     * 获取可用的LLM服务类型列表
-     */
-    @GetMapping("/llm-services")
-    public RespEntity<Map<String, Object>> getLLMServices() {
-        Map<String, Object> result = new HashMap<>();
-        result.put("default", defaultLLMService);
-        
-        // 获取所有可用的LLM服务类型枚举值
-        result.put("available", Arrays.stream(LLMServiceType.values())
-            .map(LLMServiceType::getValue)
-            .collect(Collectors.toList()));
-        
-        return RespEntity.ok(result);
     }
 } 

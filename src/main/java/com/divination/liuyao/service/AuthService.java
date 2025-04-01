@@ -14,7 +14,6 @@ import com.divination.liuyao.util.PasswordUtil;
 import com.divination.liuyao.util.RedisUtil;
 import com.divination.liuyao.util.TokenUtil;
 import com.divination.liuyao.util.UserContextHolder;
-import java.math.BigDecimal;
 import javax.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -86,7 +85,6 @@ public class AuthService {
             user.setIsVip(0); // 默认非VIP用户
             user.setCreatedAt(LocalDateTime.now());
             user.setUpdatedAt(LocalDateTime.now());
-            user.setBalance(BigDecimal.valueOf(2000));
             
             // 保存用户
             userService.save(user);
