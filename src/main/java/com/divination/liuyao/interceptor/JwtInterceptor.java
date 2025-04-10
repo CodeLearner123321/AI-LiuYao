@@ -36,7 +36,7 @@ public class JwtInterceptor implements HandlerInterceptor {
             String authHeader = request.getHeader("Authorization");
             
             if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-                return handleAuthError(response, 401, "未提供有效的认证令牌");
+                return handleAuthError(response, 302, "未提供有效的认证令牌");
             }
             
             String token = authHeader.substring(7);
@@ -65,10 +65,10 @@ public class JwtInterceptor implements HandlerInterceptor {
                     return true;
                 }
             }
-            throw new AuthenticationException("无效的认证令牌", 401);
+            throw new AuthenticationException("无效的认证令牌", 302);
         } catch (Exception e) {
             log.error("令牌验证失败: {}", e.getMessage(), e);
-            return handleAuthError(response, 401, "登录验证失败: " + e.getMessage());
+            return handleAuthError(response, 302, "登录验证失败: " + e.getMessage());
         }
     }
 

@@ -62,6 +62,10 @@ public class AiLiuyaoHistoryService {
      */
     public AiLiuyaoHistoryVO getHistoryById(Long historyId) {
         AiLiuyaoHistory aiLiuyaoHistory = historyMapper.findById(historyId).orElse(null);
+        if(aiLiuyaoHistory == null) {
+            return null;
+        }
+
         BaGuaDto baGuaDto = aiLiuyaoHistory.convertBaGuaDto();
         //处理卦象问题
 
