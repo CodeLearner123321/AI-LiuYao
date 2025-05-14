@@ -76,7 +76,9 @@ public class BaGua {
      * 根据数字创建六爻卦
      */
     public static BaGua createBaGua(byte[] isChangeMap, String number){
-        BaGua baGua = BAGUA_MAP.get(number);
+        BaGua originalBaGua  = BAGUA_MAP.get(number);
+        BaGua baGua = deepCopy(originalBaGua);
+
         for (int i = 0; i < 6; i++) {
             Yao yao = baGua.getYaos()[i];
             if(yao.isNull()){
@@ -107,22 +109,73 @@ public class BaGua {
 
 
     /**
+     * 创建BaGua对象的深拷贝
+     * @param original 要拷贝的原始BaGua对象
+     * @return 拷贝后的新BaGua对象
+     */
+    public static BaGua deepCopy(BaGua original) {
+        if (original == null) {
+            return null;
+        }
+        
+        BaGua copy = new BaGua();
+        copy.setId(original.getId());
+        copy.setName(original.getName());
+        copy.setGongWei(original.getGongWei());
+        copy.setBaoGua(original.getBaoGua());
+        copy.setYouHunGuiOrGuiHunGua(original.getYouHunGuiOrGuiHunGua());
+        copy.setLiuHeLiuChong(original.getLiuHeLiuChong());
+        
+        // 深拷贝爻数组
+        if (original.getYaos() != null) {
+            Yao[] originalYaos = original.getYaos();
+            Yao[] copyYaos = new Yao[originalYaos.length];
+            
+            for (int i = 0; i < originalYaos.length; i++) {
+                if (originalYaos[i] != null) {
+                    Yao originalYao = originalYaos[i];
+                    Yao copyYao = new Yao(
+                        originalYao.getValue(),
+                        originalYao.getPosition(),
+                        originalYao.getTianGan(),
+                        originalYao.getDiZhi(),
+                        originalYao.getLiuQin(),
+                        originalYao.getShiOrYing(),
+                        originalYao.getFuCang(),
+                        originalYao.getLiuShen()
+                    );
+                    copyYao.setIsChange(originalYao.getIsChange());
+                    copyYaos[i] = copyYao;
+                }
+            }
+            
+            copy.setYaos(copyYaos);
+        }
+        
+        return copy;
+    }
+
+    /**
      * 根据数字创建变卦的六爻卦（因为变卦的六亲由主卦的宫位属性决定）
      * @param originalShuXin 本卦的属性，用来确定变卦的六亲
      * @param number    变卦的数字
      * @return
      */
     public static BaGua createChangeBaGua(String originalShuXin, String number){
-        BaGua changeBaGua = BAGUA_MAP.get(number);
+        // 获取原始BaGua对象
+        BaGua originalBaGua = BAGUA_MAP.get(number);
+        // 创建深拷贝
+        BaGua baGua = deepCopy(originalBaGua);
+        
         for (int i = 0; i < 6; i++) {
-            Yao yao = changeBaGua.getYaos()[i];
+            Yao yao = baGua.getYaos()[i];
             if(yao.isNull()){
                 continue;
             }
             String s = WuXinUtil.relationLiuYao(originalShuXin, yao.getDiZhi().getShuXin());
             yao.setLiuQin(LiuQin.getLiuQinByName(s));
         }
-        return changeBaGua;
+        return baGua;
     }
 
     public void formatting() {
@@ -150,7 +203,7 @@ public class BaGua {
            new Yao(1,6, TianGan.REN, DiZhi.XU,  LiuQin.FUMU,   ShiOrYing.SHI,null,null)}));
        BAGUA_MAP.put("011111", new BaGua("011111","天风姤","乾宫",null,null,null,new Yao[]{
            new Yao(0,1, TianGan.XIN, DiZhi.CHOU,  LiuQin.FUMU,  ShiOrYing.SHI,null,null),
-           new Yao(1,2, TianGan.XIN, DiZhi.HAI, LiuQin.ZISUN,  null,null,null),
+           new Yao(1,2, TianGan.XIN, DiZhi.HAI, LiuQin.ZISUN,  null,"伏寅木妻财",null),
            new Yao(1,3, TianGan.XIN, DiZhi.YOU,LiuQin.XIONGDI,   null,null,null),
            new Yao(1,4, TianGan.REN, DiZhi.WU,  LiuQin.GUANGUI,ShiOrYing.YING,null,null),
            new Yao(1,5, TianGan.REN, DiZhi.SHEN,LiuQin.XIONGDI,null,null,null),
@@ -173,7 +226,7 @@ public class BaGua {
            new Yao(1,6, TianGan.REN, DiZhi.XU,  LiuQin.FUMU,   ShiOrYing.YING,null,null)}));
        BAGUA_MAP.put("000011", new BaGua("000011","风地观","乾宫",null,null,null,new Yao[]{
            
-           new Yao(0,1, TianGan.YI, DiZhi.WEI,  LiuQin.FUMU,  ShiOrYing.YING,"伏子孙子水",null),
+           new Yao(0,1, TianGan.YI, DiZhi.WEI,  LiuQin.FUMU,  ShiOrYing.YING,"伏子水子孙",null),
            new Yao(0,2, TianGan.YI, DiZhi.SI, LiuQin.GUANGUI,  null,null,null),
            new Yao(0,3, TianGan.YI, DiZhi.MAO,LiuQin.QICAI,   null,null,null),
            new Yao(0,4, TianGan.XIN, DiZhi.WEI,  LiuQin.FUMU,ShiOrYing.SHI,null,null),
@@ -297,8 +350,8 @@ public class BaGua {
             new Yao(1,6, TianGan.JI, DiZhi.SI,  LiuQin.XIONGDI,   null,null,null)}));
         BAGUA_MAP.put("010101", new BaGua("010101","火水未济","离宫",null,null,null,new Yao[]{
             new Yao(0,1, TianGan.WU, DiZhi.YIN,  LiuQin.FUMU,  null,null,null),
-            new Yao(1,2, TianGan.WU, DiZhi.CHEN, LiuQin.ZISUN,  null,"伏亥水官鬼",null),
-            new Yao(0,3, TianGan.WU, DiZhi.WU,LiuQin.XIONGDI,   ShiOrYing.SHI,null,null),
+            new Yao(1,2, TianGan.WU, DiZhi.CHEN, LiuQin.ZISUN,  null,null,null),
+            new Yao(0,3, TianGan.WU, DiZhi.WU,LiuQin.XIONGDI,   ShiOrYing.SHI,"伏亥水官鬼",null),
             new Yao(1,4, TianGan.JI, DiZhi.YOU,  LiuQin.QICAI,null,null,null),
             new Yao(0,5, TianGan.JI, DiZhi.WEI,LiuQin.ZISUN,null,null,null),
             new Yao(1,6, TianGan.JI, DiZhi.SI,  LiuQin.XIONGDI,   ShiOrYing.YING,null,null)}));
@@ -343,7 +396,7 @@ public class BaGua {
             new Yao(0,6, TianGan.GENG, DiZhi.XU,  LiuQin.QICAI,   ShiOrYing.SHI,null,null)}));
         BAGUA_MAP.put("000100", new BaGua("000100","雷地豫","震宫",null,null,ConstantUtil.LIU_HE,new Yao[]{
             
-            new Yao(0,1, TianGan.YI, DiZhi.WEI,  LiuQin.QICAI,  ShiOrYing.SHI,"伏子孙父母",null),
+            new Yao(0,1, TianGan.YI, DiZhi.WEI,  LiuQin.QICAI,  ShiOrYing.SHI,"伏子水父母",null),
             new Yao(0,2, TianGan.YI, DiZhi.SI, LiuQin.ZISUN,  null,null,null),
             new Yao(0,3, TianGan.YI, DiZhi.MAO,LiuQin.XIONGDI,   null,null,null),
             new Yao(1,4, TianGan.GENG, DiZhi.WU,  LiuQin.ZISUN,ShiOrYing.YING,null,null),
@@ -351,7 +404,7 @@ public class BaGua {
             new Yao(0,6, TianGan.GENG, DiZhi.XU,  LiuQin.QICAI,   null,null,null)}));
         BAGUA_MAP.put("010100", new BaGua("010100","雷水解","震宫",null,null,null,new Yao[]{
             
-            new Yao(0,1, TianGan.WU, DiZhi.YIN,  LiuQin.XIONGDI,  null,"伏子孙父母",null),
+            new Yao(0,1, TianGan.WU, DiZhi.YIN,  LiuQin.XIONGDI,  null,"伏子水父母",null),
             new Yao(1,2, TianGan.WU, DiZhi.CHEN, LiuQin.QICAI,  ShiOrYing.SHI,null,null),
             new Yao(0,3, TianGan.WU, DiZhi.WU,LiuQin.ZISUN,   null,null,null),
             new Yao(1,4, TianGan.GENG, DiZhi.WU,  LiuQin.ZISUN,null,null,null),
@@ -383,7 +436,7 @@ public class BaGua {
             new Yao(0,6, TianGan.WU, DiZhi.ZI,  LiuQin.FUMU,   null,null,null)}));
         BAGUA_MAP.put("011110", new BaGua("011110","泽风大过","震宫",null,YouHunGuiHun.YOUHUNGUA,null,new Yao[]{
             
-            new Yao(0,1, TianGan.XIN, DiZhi.WEI,  LiuQin.QICAI,  ShiOrYing.YING,null,null),
+            new Yao(0,1, TianGan.XIN, DiZhi.CHOU,  LiuQin.QICAI,  ShiOrYing.YING,null,null),
             new Yao(1,2, TianGan.XIN, DiZhi.HAI, LiuQin.FUMU,  null,"伏寅木兄弟",null),
             new Yao(1,3, TianGan.XIN, DiZhi.YOU,LiuQin.GUANGUI,   null,null,null),
             new Yao(1,4, TianGan.DIN, DiZhi.HAI,  LiuQin.FUMU,ShiOrYing.SHI,"伏午火子孙",null),
@@ -424,7 +477,7 @@ public class BaGua {
             new Yao(0,4, TianGan.XIN, DiZhi.WEI,  LiuQin.QICAI,null,null,null),
             new Yao(1,5, TianGan.XIN, DiZhi.SI,LiuQin.ZISUN,ShiOrYing.YING,null,null),
             new Yao(1,6, TianGan.XIN, DiZhi.MAO,  LiuQin.XIONGDI,  null,null,null)}));
-        BAGUA_MAP.put("100011", new BaGua("100011","风雷宜","巽宫",null,null,null,new Yao[]{
+        BAGUA_MAP.put("100011", new BaGua("100011","风雷益","巽宫",null,null,null,new Yao[]{
             
             new Yao(1,1, TianGan.GENG, DiZhi.ZI,  LiuQin.FUMU,  null,null,null),
             new Yao(0,2, TianGan.GENG, DiZhi.YIN, LiuQin.XIONGDI,  null,null,null),
@@ -528,9 +581,9 @@ public class BaGua {
             new Yao(0,1, TianGan.WU, DiZhi.YIN,  LiuQin.ZISUN,  null,null,null),
             new Yao(1,2, TianGan.WU, DiZhi.CHEN, LiuQin.GUANGUI,  null,null,null),
             new Yao(0,3, TianGan.WU, DiZhi.WU,LiuQin.QICAI,   ShiOrYing.SHI,null,null),
-            new Yao(0,4, TianGan.GUI, DiZhi.CHOU,  LiuQin.FUMU,null,"伏申金父母",null),
-            new Yao(0,5, TianGan.GUI, DiZhi.HAI,LiuQin.GUANGUI,null,null,null),
-            new Yao(0,6, TianGan.GUI, DiZhi.YOU,  LiuQin.XIONGDI,  ShiOrYing.YING,null,null)}));
+            new Yao(0,4, TianGan.GUI, DiZhi.CHOU,  LiuQin.GUANGUI,null,"伏申金父母",null),
+            new Yao(0,5, TianGan.GUI, DiZhi.HAI,LiuQin.XIONGDI,null,null,null),
+            new Yao(0,6, TianGan.GUI, DiZhi.YOU,  LiuQin.FUMU,  ShiOrYing.YING,null,null)}));
 
 
 
@@ -573,7 +626,7 @@ public class BaGua {
             new Yao(1,2, TianGan.DIN, DiZhi.MAO, LiuQin.GUANGUI,  null,null,null),
             new Yao(0,3, TianGan.DIN, DiZhi.CHOU,LiuQin.XIONGDI,   null,null,null),
             new Yao(1,4, TianGan.JI, DiZhi.YOU,  LiuQin.ZISUN,ShiOrYing.SHI,null,null),
-            new Yao(0,5, TianGan.JI, DiZhi.WEI,LiuQin.XIONGDI,null,"伏子孙妻财",null),
+            new Yao(0,5, TianGan.JI, DiZhi.WEI,LiuQin.XIONGDI,null,"伏子水妻财",null),
             new Yao(1,6, TianGan.JI, DiZhi.SI,  LiuQin.FUMU,  null,null,null)}));
         BAGUA_MAP.put("110111", new BaGua("110111","天泽履","艮宫",null,null,null,new Yao[]{
             
@@ -589,7 +642,7 @@ public class BaGua {
             new Yao(1,2, TianGan.DIN, DiZhi.MAO, LiuQin.GUANGUI,  null,null,null),
             new Yao(0,3, TianGan.DIN, DiZhi.CHOU,LiuQin.XIONGDI,   null,"伏申金子孙",null),
             new Yao(0,4, TianGan.XIN, DiZhi.WEI,  LiuQin.XIONGDI,ShiOrYing.SHI,null,null),
-            new Yao(1,5, TianGan.XIN, DiZhi.SI,LiuQin.FUMU,null,"伏子孙妻财",null),
+            new Yao(1,5, TianGan.XIN, DiZhi.SI,LiuQin.FUMU,null,"伏子水妻财",null),
             new Yao(1,6, TianGan.XIN, DiZhi.MAO,  LiuQin.GUANGUI,  null,null,null)}));
         BAGUA_MAP.put("001011", new BaGua("001011","风山渐","艮宫",null,YouHunGuiHun.GUIHUNGUA,null,new Yao[]{
             
@@ -612,7 +665,7 @@ public class BaGua {
         BAGUA_MAP.put("100000", new BaGua("100000","地雷复","坤宫",null,null,ConstantUtil.LIU_HE,new Yao[]{
             
             new Yao(1,1, TianGan.GENG, DiZhi.ZI,  LiuQin.QICAI,  ShiOrYing.SHI,null,null),
-            new Yao(0,2, TianGan.GENG, DiZhi.YIN, LiuQin.GUANGUI,  null,"伏巳火官鬼",null),
+            new Yao(0,2, TianGan.GENG, DiZhi.YIN, LiuQin.GUANGUI,  null,"伏巳火父母",null),
             new Yao(0,3, TianGan.GENG, DiZhi.CHEN,LiuQin.XIONGDI,   null,null,null),
             new Yao(0,4, TianGan.GUI, DiZhi.CHOU,  LiuQin.XIONGDI,ShiOrYing.YING,null,null),
             new Yao(0,5, TianGan.GUI, DiZhi.HAI,LiuQin.QICAI,null,null,null),

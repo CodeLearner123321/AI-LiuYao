@@ -119,7 +119,7 @@ public class Hexagram extends BaGuaVo{
                 num = i;
             }
         }
-        for (int i = 0; i <LIU_SHENS.length; i++) {
+        for (int i = 0; i < LIU_SHENS.length; i++) {
             Yao yao = yaos[i];
             if( !yao.isNull() ){
                 yao.setLiuShen(LIU_SHENS[(num + i) % LIU_SHENS.length]);

@@ -14,6 +14,7 @@ import com.divination.liuyao.util.PasswordUtil;
 import com.divination.liuyao.util.RedisUtil;
 import com.divination.liuyao.util.TokenUtil;
 import com.divination.liuyao.util.UserContextHolder;
+import java.math.BigDecimal;
 import javax.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -75,6 +76,8 @@ public class AuthService {
                 user.setPhoneNumber(registerRequest.getPhoneNumber());
             }
             user.setUserName(registerRequest.getUserName());
+            //默认送100万的额度
+            user.setBalance(new BigDecimal(1000000.00));
 
             // 生成盐值并哈希密码
             String salt = passwordUtil.generateSalt();
