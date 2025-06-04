@@ -1,6 +1,9 @@
 package com.divination.liuyao.service;
 
 import cn.hutool.Hutool;
+import com.divination.liuyao.assemblies.enums.LLMServiceType;
+import com.divination.liuyao.assemblies.enums.ModelType;
+import com.divination.liuyao.config.DefaultValueConfig;
 import com.divination.liuyao.pojo.dto.CastDto;
 import com.divination.liuyao.pojo.entity.Task;
 import com.divination.liuyao.pojo.entity.User;
@@ -46,6 +49,9 @@ public class TaskService {
     @Autowired
     private ObjectMapper objectMapper;
 
+    @Autowired
+    private DefaultValueConfig defaultValueConfig;
+
     /**
      * 创建起卦任务
      * @param castDto 起卦参数
@@ -89,6 +95,14 @@ public class TaskService {
             
             // 将请求参数转为JSON
             try {
+                //使用Redis计算当前可用额度
+                //注：用户每天可以免费使用两次，如果超出
+                boolean isTrue = redisUtil.checkAndIncrement(RedisUtil.USER_REQUEST_CREDIT_LIMIT + userId);
+                if(isTrue){
+                    castDto.setLlmServiceType(LLMServiceType.VOLCENGINE);
+                    castDto.setApiKey(defaultValueConfig.getApiKey());
+                    castDto.setModelId(ModelType.DeepSeek);
+                }
                 task.setRequestParams(objectMapper.writeValueAsString(castDto));
             } catch (Exception e) {
                 log.error("序列化请求参数失败", e);
@@ -99,7 +113,7 @@ public class TaskService {
             task.setErrorMsg(null);
             task.setCreatedAt(LocalDateTime.now());
             task.setUpdatedAt(LocalDateTime.now());
-            
+
             // 保存任务
             taskMapper.insert(task);
             

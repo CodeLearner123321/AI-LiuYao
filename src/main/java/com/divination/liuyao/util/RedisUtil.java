@@ -1,5 +1,7 @@
 package com.divination.liuyao.util;
 
+import cn.hutool.core.date.LocalDateTimeUtil;
+import java.time.LocalDateTime;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -19,6 +21,8 @@ public class RedisUtil {
 
     @Autowired
     private RedisTemplate<String, Object> redisTemplate;
+
+    public static final String USER_REQUEST_CREDIT_LIMIT = "limit:user:request:credit";
 
     /**
      * 指定缓存失效时间
@@ -80,8 +84,6 @@ public class RedisUtil {
             }
         }
     }
-
-    // ============================String=============================
 
     /**
      * 普通缓存获取
@@ -146,6 +148,8 @@ public class RedisUtil {
         return redisTemplate.opsForValue().increment(key, delta);
     }
 
+    // ================================Map=================================
+
     /**
      * 递减
      *
@@ -159,8 +163,6 @@ public class RedisUtil {
         }
         return redisTemplate.opsForValue().increment(key, -delta);
     }
-
-    // ================================Map=================================
 
     /**
      * HashGet
@@ -271,6 +273,8 @@ public class RedisUtil {
         redisTemplate.opsForHash().delete(key, item);
     }
 
+    // ============================Set=============================
+
     /**
      * 判断hash表中是否有该项的值
      *
@@ -281,8 +285,6 @@ public class RedisUtil {
     public boolean hHasKey(String key, String item) {
         return redisTemplate.opsForHash().hasKey(key, item);
     }
-
-    // ============================Set=============================
 
     /**
      * 根据key获取Set中的所有值
@@ -351,6 +353,8 @@ public class RedisUtil {
         }
     }
 
+    // ===============================List=================================
+
     /**
      * 移除值为value的
      *
@@ -367,8 +371,6 @@ public class RedisUtil {
             return 0;
         }
     }
-
-    // ===============================List=================================
 
     /**
      * 获取list缓存的内容
@@ -532,7 +534,8 @@ public class RedisUtil {
 
     /**
      * 如果key不存在，则设置值并返回true，否则返回false
-     * @param key 键
+     *
+     * @param key   键
      * @param value 值
      * @return 成功返回true，失败返回false
      */
@@ -544,12 +547,13 @@ public class RedisUtil {
             return false;
         }
     }
-    
+
     /**
      * 如果key不存在，则设置值和过期时间并返回true，否则返回false
-     * @param key 键
+     *
+     * @param key   键
      * @param value 值
-     * @param time 时间(秒)
+     * @param time  时间(秒)
      * @return 成功返回true，失败返回false
      */
     public boolean setIfAbsent(String key, Object value, long time) {
@@ -561,6 +565,32 @@ public class RedisUtil {
             return result;
         } catch (Exception e) {
             log.error("Redis setIfAbsent with expire 操作异常", e);
+            return false;
+        }
+    }
+
+    /**
+     * 检查并增加计数
+     * 用于检查当前用户使用免费额度情况
+     */
+    public boolean checkAndIncrement(String key) {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime lastTime = LocalDateTime.of(now.getYear(), now.getMonth(), now.getDayOfMonth(), 23, 59);
+        long seconds = LocalDateTimeUtil.between(now, lastTime).getSeconds();
+
+        try {
+            if (!hasKey(key)) {
+                return set(key, String.valueOf(1), seconds);
+            }
+            Integer value = Integer.valueOf(get(key) + "");
+            if (value == null || value >= 2) {
+                return false;
+            }
+            incr(key, 1);
+            return true;
+
+        } catch (Exception e) {
+            log.error("Redis checkAndIncrement 操作异常", e);
             return false;
         }
     }

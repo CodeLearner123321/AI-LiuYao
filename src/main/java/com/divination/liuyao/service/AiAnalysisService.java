@@ -107,13 +107,17 @@ public class AiAnalysisService {
         } catch (Exception e) {
             log.error("六爻分析任务 {} 执行失败: {}", task.getId(), e.getMessage(), e);
 
+            String msg = e.getMessage();
+            if(e.getMessage().contains("The API key in the request is missing or invali")){
+                msg = "两次免费接口调用余额已用完，请改日再来或在右上角头像中选择设置KEY";
+            }
             try {
                 // 更新任务状态为失败（包含错误信息）
                 taskMapper.updateTaskComplete(
                     task.getId(),
                     null,
                     TaskConstants.TASK_STATUS_FAILED,
-                    e.getMessage(),
+                    msg,
                     BigDecimal.ZERO,
                     TaskConstants.CHARGE_STATUS_NO
                 );

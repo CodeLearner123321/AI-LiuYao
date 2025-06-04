@@ -3,7 +3,7 @@ package com.divination.liuyao.assemblies.enums;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 public enum ModelType {
-    DeepSeek("deepseek-r1", "deepseek-r1","deepseek-r1-250120");
+    DeepSeek("deepseek-r1", "deepseek-r1","deepseek-r1-250528");
 
     private final String value;
     //阿里百练平台的modelId
