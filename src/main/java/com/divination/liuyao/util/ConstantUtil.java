@@ -76,5 +76,10 @@ public class ConstantUtil {
 
     public final static String GUI_REN = "贵人";
 
-
+    //图片处理提示词
+    public final static String IMAGE_PROCESSING_PROMPT_WORDS = "请帮我识别这个六爻卦象的内容，并将内容严格按照要求输出。\n" +
+            "要求如下：\n" +
+            "1、结果按照JSON形式输出，且只用返回JSON形式就行了。\n" +
+            "2、返回的形式包含时间（时间格式按照yyyy-MM-dd-HH:mm:ss格式返回）、主卦（只包含名称，不能包含任何内容，例子：乾为天、天风姤等）、变卦（和主卦规则一样）。\n" +
+            "举例：{\"time\": 2021-01-12-10:09,\"zhuGua\": \"雷水解\",\"bianGua\": \"雷地豫\"}就是雷水解变雷地豫";
 }

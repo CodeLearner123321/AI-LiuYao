@@ -71,7 +71,7 @@ public class AiAnalysisService {
             CastDto castDto = objectMapper.readValue(task.getRequestParams(), CastDto.class);
 
             // 计算卦象
-            var hexagram = hexagramService.castHexagram(castDto);
+            Hexagram hexagram = hexagramService.castHexagram(castDto);
 
             // 调用AI进行分析
             AiResult analysis = this.analyzeHexagram(hexagram, castDto);
@@ -188,7 +188,7 @@ public class AiAnalysisService {
         try {
             // 查询任务信息
             Optional<Task> taskOpt = taskMapper.findById(taskId);
-            if (taskOpt.isEmpty()) {
+            if (!taskOpt.isPresent()) {
                 log.error("退款失败: 任务 {} 不存在", taskId);
                 return;
             }
