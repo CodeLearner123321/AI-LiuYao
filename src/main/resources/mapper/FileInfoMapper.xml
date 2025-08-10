@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.divination.liuyao.mapper.FileInfoMapper">
+    
+    <!-- 根据上传者用户ID查询文件列表 -->
+    <select id="selectByUploaderUserId" resultType="com.divination.liuyao.pojo.entity.FileInfo">
+        SELECT * FROM file_info 
+        WHERE uploader_user_id = #{uploaderUserId} AND deleted = 0
+        ORDER BY create_time DESC
+    </select>
+    
+    <!-- 根据文件类型查询文件列表 -->
+    <select id="selectByType" resultType="com.divination.liuyao.pojo.entity.FileInfo">
+        SELECT * FROM file_info 
+        WHERE type = #{type} AND deleted = 0
+        ORDER BY create_time DESC
+    </select>
+    
+    <!-- 根据文件格式查询文件列表 -->
+    <select id="selectByFileFormat" resultType="com.divination.liuyao.pojo.entity.FileInfo">
+        SELECT * FROM file_info 
+        WHERE file_format = #{fileFormat} AND deleted = 0
+        ORDER BY create_time DESC
+    </select>
+    
+    <!-- 根据文件名模糊查询 -->
+    <select id="selectByFileNameLike" resultType="com.divination.liuyao.pojo.entity.FileInfo">
+        SELECT * FROM file_info 
+        WHERE file_name LIKE CONCAT('%', #{fileName}, '%') AND deleted = 0
+        ORDER BY create_time DESC
+    </select>
+    
+    <!-- 根据作者查询文件列表 -->
+    <select id="selectByAuthor" resultType="com.divination.liuyao.pojo.entity.FileInfo">
+        SELECT * FROM file_info 
+        WHERE author = #{author} AND deleted = 0
+        ORDER BY create_time DESC
+    </select>
+    
+    <!-- 根据条件查询文件列表 -->
+    <select id="selectByCondition" parameterType="com.divination.liuyao.pojo.entity.FileInfo" resultType="com.divination.liuyao.pojo.entity.FileInfo">
+        SELECT * FROM file_info 
+        <where>
+            deleted = 0
+            <if test="type != null and type != ''">
+                AND type = #{type}
+            </if>
+            <if test="fileFormat != null and fileFormat != ''">
+                AND file_format = #{fileFormat}
+            </if>
+            <if test="author != null and author != ''">
+                AND author = #{author}
+            </if>
+            <if test="uploaderUserId != null">
+                AND uploader_user_id = #{uploaderUserId}
+            </if>
+        </where>
+        ORDER BY create_time DESC
+    </select>
+    
+    <!-- 根据条件统计文件数量 -->
+    <select id="countByCondition" parameterType="com.divination.liuyao.pojo.entity.FileInfo" resultType="long">
+        SELECT COUNT(*) FROM file_info 
+        <where>
+            deleted = 0
+            <if test="type != null and type != ''">
+                AND type = #{type}
+            </if>
+            <if test="fileFormat != null and fileFormat != ''">
+                AND file_format = #{fileFormat}
+            </if>
+            <if test="author != null and author != ''">
+                AND author = #{author}
+            </if>
+            <if test="uploaderUserId != null">
+                AND uploader_user_id = #{uploaderUserId}
+            </if>
+        </where>
+    </select>
+    
+    <!-- 根据文件大小范围查询 -->
+    <select id="selectByFileSizeRange" resultType="com.divination.liuyao.pojo.entity.FileInfo">
+        SELECT * FROM file_info 
+        WHERE file_size BETWEEN #{minSize} AND #{maxSize} AND deleted = 0
+        ORDER BY file_size ASC
+    </select>
+    
+    <!-- 根据创建时间范围查询 -->
+    <select id="selectByCreateTimeRange" resultType="com.divination.liuyao.pojo.entity.FileInfo">
+        SELECT * FROM file_info 
+        WHERE create_time BETWEEN #{startTime} AND #{endTime} AND deleted = 0
+        ORDER BY create_time DESC
+    </select>
+    
+    <!-- 根据文件大小排序查询 -->
+    <select id="selectByFileSizeOrder" resultType="com.divination.liuyao.pojo.entity.FileInfo">
+        SELECT * FROM file_info 
+        WHERE deleted = 0
+        ORDER BY file_size ${orderBy}
+        LIMIT #{limit}
+    </select>
+    
+    <!-- 根据创建时间排序查询 -->
+    <select id="selectByCreateTimeOrder" resultType="com.divination.liuyao.pojo.entity.FileInfo">
+        SELECT * FROM file_info 
+        WHERE deleted = 0
+        ORDER BY create_time ${orderBy}
+        LIMIT #{limit}
+    </select>
+    
+    <!-- 统计各文件格式的数量 -->
+    <select id="countByFileFormat" resultType="com.divination.liuyao.pojo.entity.FileInfo">
+        SELECT file_format, COUNT(*) as count 
+        FROM file_info 
+        WHERE deleted = 0 
+        GROUP BY file_format
+    </select>
+    
+    <!-- 统计各文件类型的数量 -->
+    <select id="countByFileType" resultType="com.divination.liuyao.pojo.entity.FileInfo">
+        SELECT type, COUNT(*) as count 
+        FROM file_info 
+        WHERE deleted = 0 
+        GROUP BY type
+    </select>
+    
+    <!-- 统计用户上传文件数量 -->
+    <select id="countByUploaderUserId" resultType="long">
+        SELECT COUNT(*) FROM file_info 
+        WHERE uploader_user_id = #{uploaderUserId} AND deleted = 0
+    </select>
+    
+    <!-- 查询用户最近上传的文件 -->
+    <select id="selectRecentByUploaderUserId" resultType="com.divination.liuyao.pojo.entity.FileInfo">
+        SELECT * FROM file_info 
+        WHERE uploader_user_id = #{uploaderUserId} AND deleted = 0
+        ORDER BY create_time DESC
+        LIMIT #{limit}
+    </select>
+    
+    <!-- 更新文件名称 -->
+    <update id="updateFileName">
+        UPDATE file_info 
+        SET file_name = #{fileName}, update_time = NOW()
+        WHERE id = #{id}
+    </update>
+    
+    <!-- 更新文件类型 -->
+    <update id="updateFileType">
+        UPDATE file_info 
+        SET type = #{type}, update_time = NOW()
+        WHERE id = #{id}
+    </update>
+    
+    <!-- 更新作者信息 -->
+    <update id="updateAuthor">
+        UPDATE file_info 
+        SET author = #{author}, update_time = NOW()
+        WHERE id = #{id}
+    </update>
+    
+    <!-- 恢复已删除的文件 -->
+    <update id="restoreById">
+        UPDATE file_info 
+        SET deleted = 0, update_time = NOW()
+        WHERE id = #{id}
+    </update>
+    
+    <!-- 查询已删除的文件列表 -->
+    <select id="selectDeleted" resultType="com.divination.liuyao.pojo.entity.FileInfo">
+        SELECT * FROM file_info 
+        WHERE deleted = 1
+        ORDER BY update_time DESC
+    </select>
+    
+</mapper>

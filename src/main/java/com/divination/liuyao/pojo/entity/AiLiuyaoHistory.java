@@ -1,5 +1,6 @@
 package com.divination.liuyao.pojo.entity;
 
+import com.baomidou.mybatisplus.annotation.*;
 import com.divination.liuyao.assemblies.enums.CastType;
 import com.divination.liuyao.pojo.dto.BaGuaDto;
 import com.fasterxml.jackson.annotation.JsonFormat;
@@ -12,11 +13,13 @@ import java.time.LocalDateTime;
  * 记录用户成功使用AI算卦并获得结果的历史
  */
 @Data
+@TableName("ai_liuyao_history")
 public class AiLiuyaoHistory {
     
     /**
      * 记录ID
      */
+    @TableId(type = IdType.AUTO)
     private Long id;
 
     /**
@@ -82,6 +85,7 @@ public class AiLiuyaoHistory {
     /**
      * 创建时间
      */
+    @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
     
     /**

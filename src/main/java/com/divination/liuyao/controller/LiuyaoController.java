@@ -5,6 +5,10 @@ import com.divination.liuyao.assemblies.enums.LLMServiceType;
 import com.divination.liuyao.pojo.dto.BaGuaDto;
 import com.divination.liuyao.pojo.dto.BaZi;
 import com.divination.liuyao.pojo.dto.CastDto;
+import com.divination.liuyao.pojo.dto.UserPermissionDTO;
+import com.divination.liuyao.pojo.entity.User;
+import com.divination.liuyao.pojo.enums.UserRoleType;
+import com.divination.liuyao.pojo.enums.ViewPermission;
 import com.divination.liuyao.pojo.vo.BaGuaVo;
 import com.divination.liuyao.pojo.vo.TaskQueryVO;
 import com.divination.liuyao.result.RespEntity;
@@ -16,6 +20,7 @@ import com.divination.liuyao.exception.AuthenticationException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.time.LocalDateTime;
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -111,5 +116,19 @@ public class LiuyaoController {
     public RespEntity<BaGuaVo> calculateLiuYao(@Valid @RequestBody BaGuaDto baGuaDto) {
         BaGuaVo baGuaVo = hexagramService.calculateLiuYao(baGuaDto);
         return RespEntity.ok(baGuaVo);
+    }
+
+    /**
+     * 获取用户权限信息
+     */
+    @GetMapping("/permissions")
+    public RespEntity<UserPermissionDTO> getUserPermissions() {
+        if(UserContextHolder.isRoot()){
+            UserPermissionDTO userPermissionDTO = new UserPermissionDTO();
+            userPermissionDTO.setViewPermissions(Arrays.asList(ViewPermission.UPLOAD_VIEW.getCode()));
+            userPermissionDTO.setRole(UserRoleType.ROOT.getCode());
+            return RespEntity.ok(userPermissionDTO);
+        }
+        return RespEntity.ok(new UserPermissionDTO());
     }
 } 

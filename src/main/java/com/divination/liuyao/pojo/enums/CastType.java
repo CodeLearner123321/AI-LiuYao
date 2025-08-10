@@ -8,17 +8,17 @@ public enum CastType {
     QIMEN("奇门"),
     ZIWEI("紫微"),
     BAZI("八字");
-    
+
     private final String description;
-    
+
     CastType(String description) {
         this.description = description;
     }
-    
+
     public String getDescription() {
         return description;
     }
-    
+
     public static CastType fromString(String text) {
         for (CastType type : CastType.values()) {
             if (type.name().equalsIgnoreCase(text)) {

@@ -1,5 +1,6 @@
 package com.divination.liuyao.mapper;
 
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import com.divination.liuyao.pojo.entity.User;
@@ -7,22 +8,32 @@ import com.divination.liuyao.pojo.entity.User;
 import java.math.BigDecimal;
 import java.util.Optional;
 
+/**
+ * 用户数据访问层接口
+ * 继承BaseMapper获得通用的CRUD方法
+ */
 @Mapper
-public interface UserMapper {
+public interface UserMapper extends BaseMapper<User> {
     
+    /**
+     * 根据手机号查询用户
+     */
     Optional<User> findByPhoneNumber(String phoneNumber);
     
+    /**
+     * 根据邮箱查询用户
+     */
     Optional<User> findByEmail(String email);
     
+    /**
+     * 根据用户名查询用户
+     */
     Optional<User> findByUserName(String userName);
     
+    /**
+     * 根据ID查询用户
+     */
     Optional<User> findById(Long id);
-    
-    int insert(User user);
-    
-    int update(User user);
-    
-    int deleteById(Long id);
     
     /**
      * 预扣费操作，使用乐观锁
@@ -49,4 +60,6 @@ public interface UserMapper {
      * @return 影响的行数
      */
     int refund(@Param("userId") Long userId, @Param("amount") BigDecimal amount);
+
+    int update(User user);
 } 

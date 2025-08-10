@@ -1,5 +1,6 @@
 package com.divination.liuyao.mapper;
 
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.divination.liuyao.pojo.entity.Task;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -7,15 +8,12 @@ import org.apache.ibatis.annotations.Param;
 import java.math.BigDecimal;
 import java.util.Optional;
 
+/**
+ * 任务数据访问层接口
+ * 继承BaseMapper获得通用的CRUD方法
+ */
 @Mapper
-public interface TaskMapper {
-    
-    /**
-     * 插入新任务
-     * @param task 任务对象
-     * @return 影响行数
-     */
-    int insert(Task task);
+public interface TaskMapper extends BaseMapper<Task> {
     
     /**
      * 更新任务状态

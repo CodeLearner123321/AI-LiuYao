@@ -90,4 +90,7 @@ public class AuthController {
     public RespEntity<String> updatePassword(@Valid @RequestBody UpdatePasswordRequest request) {
         return authService.updatePassword(request);
     }
+
+
+
 }

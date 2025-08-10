@@ -1,5 +1,6 @@
 package com.divination.liuyao.pojo.entity;
 
+import com.baomidou.mybatisplus.annotation.*;
 import com.divination.liuyao.pojo.model.AiResult;
 import lombok.Data;
 
@@ -10,11 +11,13 @@ import java.time.LocalDateTime;
  * 异步任务实体类
  */
 @Data
+@TableName("task")
 public class Task {
     
     /**
      * 任务ID
      */
+    @TableId(type = IdType.AUTO)
     private Long id;
     
     /**
@@ -72,11 +75,13 @@ public class Task {
     /**
      * 创建时间
      */
+    @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createdAt;
     
     /**
      * 更新时间
      */
+    @TableField(fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updatedAt;
     
     /**

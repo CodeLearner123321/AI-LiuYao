@@ -1,5 +1,6 @@
 package com.divination.liuyao.mapper;
 
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.divination.liuyao.pojo.entity.AiLiuyaoHistory;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -7,15 +8,12 @@ import org.apache.ibatis.annotations.Param;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * AI六爻历史记录数据访问层接口
+ * 继承BaseMapper获得通用的CRUD方法
+ */
 @Mapper
-public interface AiLiuyaoHistoryMapper {
-    
-    /**
-     * 插入新的历史记录
-     * @param history 历史记录对象
-     * @return 影响行数
-     */
-    int insert(AiLiuyaoHistory history);
+public interface AiLiuyaoHistoryMapper extends BaseMapper<AiLiuyaoHistory> {
     
     /**
      * 根据ID查询历史记录
@@ -24,6 +22,9 @@ public interface AiLiuyaoHistoryMapper {
      */
     Optional<AiLiuyaoHistory> findById(Long id);
     
+    /**
+     * 根据用户ID查询问题列表
+     */
     List<AiLiuyaoHistory> findQuestionListByUserId(Long userId);
 
     /**
@@ -32,18 +33,4 @@ public interface AiLiuyaoHistoryMapper {
      * @return 历史记录对象的可选包装
      */
     Optional<AiLiuyaoHistory> findByTaskId(Long taskId);
-    
-    /**
-     * 更新历史记录
-     * @param history 历史记录对象
-     * @return 影响行数
-     */
-    int update(AiLiuyaoHistory history);
-    
-    /**
-     * 删除历史记录
-     * @param id 记录ID
-     * @return 影响行数
-     */
-    int deleteById(Long id);
 } 
