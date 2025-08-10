@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.divination.liuyao.exception.YsyjException;
 import com.divination.liuyao.mapper.FileInfoMapper;
+import com.divination.liuyao.mapper.UserMapper;
 import com.divination.liuyao.pojo.dto.BookInfoDTO;
 import com.divination.liuyao.pojo.dto.PageRequestDTO;
 import com.divination.liuyao.pojo.dto.PageResultDTO;
@@ -11,6 +12,7 @@ import com.divination.liuyao.pojo.enums.DeleteType;
 import com.divination.liuyao.pojo.enums.FileFormatEnum;
 import com.divination.liuyao.pojo.entity.FileInfo;
 import com.divination.liuyao.service.FileService;
+import com.divination.liuyao.service.UserService;
 import com.divination.liuyao.util.OSSUtil;
 import com.divination.liuyao.util.UserContextHolder;
 import lombok.extern.slf4j.Slf4j;
@@ -38,6 +40,8 @@ public class FileServiceImpl implements FileService {
 
     @Autowired
     private FileInfoMapper fileInfoMapper;
+    @Autowired
+    private UserMapper userMapper;
 
 
     /**
@@ -90,6 +94,7 @@ public class FileServiceImpl implements FileService {
         fileInfo.setUpdateTime(new Date());
         fileInfo.setDeleted(DeleteType.NOT_DELETED.getCode());
         fileInfo.setUploaderUserId(UserContextHolder.getUserId());
+        fileInfo.setUploaderUsername(UserContextHolder.getUsername());
 
         if(fileInfo.getId() == null){
             fileInfo.setCreateTime(new Date());
@@ -104,8 +109,13 @@ public class FileServiceImpl implements FileService {
 
 
     @Override
-    public ResponseEntity<Resource> downloadFile(Long fileId) {
-        return null;
+    public String downloadFile(Long fileId) {
+        FileInfo fileInfo = fileInfoMapper.selectById(fileId);
+        OSSUtil.getFileUrl(BOOK + "/" + fileInfo.getUploaderUsername(), fileInfo.getFileName());
+        String fileUrl = OSSUtil.getFileUrl(BOOK + "/" + fileInfo.getUploaderUsername(), fileInfo.getFileName());
+
+
+        return fileUrl;
     }
     
     @Override

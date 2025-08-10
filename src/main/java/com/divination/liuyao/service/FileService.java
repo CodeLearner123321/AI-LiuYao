@@ -30,7 +30,7 @@ public interface FileService {
      * @param fileId 文件ID
      * @return 返回文件资源
      */
-    ResponseEntity<Resource> downloadFile(Long fileId);
+    String downloadFile(Long fileId);
     
     /**
      * 分页查询系统书籍

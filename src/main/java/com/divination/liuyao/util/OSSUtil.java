@@ -55,7 +55,7 @@ public class OSSUtil {
     public static String getFileUrl(String path, String fileName) {
         OSS ossClient = getOSSClient();
         String objectName = (path == null || path.isEmpty()) ? fileName : path + "/" + fileName;
-        Date expiration = new Date(new Date().getTime() + 3600 * 1000L);
+        Date expiration = new Date(new Date().getTime() + 60 * 1000L);
         // 生成以GET方法访问的预签名URL。本示例没有额外请求头，其他人可以直接通过浏览器访问相关内容。
         URL url = ossClient.generatePresignedUrl(BUCKET_NAME, objectName, expiration);
         return url.toString();

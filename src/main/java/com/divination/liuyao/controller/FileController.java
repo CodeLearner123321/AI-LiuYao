@@ -1,5 +1,6 @@
 package com.divination.liuyao.controller;
 
+import com.divination.liuyao.annotation.RateLimit;
 import com.divination.liuyao.pojo.dto.BookInfoDTO;
 import com.divination.liuyao.pojo.dto.PageRequestDTO;
 import com.divination.liuyao.pojo.dto.PageResultDTO;
@@ -23,6 +24,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @RestController
@@ -47,8 +49,9 @@ public class FileController {
      * 文件下载接口
      */
     @GetMapping("/download/{fileId}")
-    public ResponseEntity<Resource> downloadFile(@PathVariable("fileId") Long fileId) {
-        return fileService.downloadFile(fileId);
+    @RateLimit(period = 1, timeUnit = TimeUnit.DAYS, maxRequests = 2, message = "一天最多只能下载两次文件")
+    public ResponseEntity<String> downloadFile(@PathVariable("fileId") Long fileId) {
+        return ResponseEntity.ok(fileService.downloadFile(fileId));
     }
 
 

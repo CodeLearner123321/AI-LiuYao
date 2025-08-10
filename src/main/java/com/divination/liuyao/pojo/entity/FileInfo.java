@@ -13,6 +13,8 @@ public class FileInfo {
 
     private Long uploaderUserId;    // 上传者userId
 
+    private String uploaderUsername; // 上传者用户名
+
     private String fileName;        // 文件名称
 
     private Long fileSize;          // 文件大小（字节）
