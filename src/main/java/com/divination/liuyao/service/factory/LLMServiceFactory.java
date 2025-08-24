@@ -2,6 +2,7 @@ package com.divination.liuyao.service.factory;
 
 import com.alibaba.dashscope.exception.InputRequiredException;
 import com.alibaba.dashscope.exception.NoApiKeyException;
+import com.alibaba.dashscope.exception.UploadFileException;
 import com.divination.liuyao.assemblies.enums.LLMServiceType;
 import com.divination.liuyao.assemblies.enums.ModelType;
 import com.divination.liuyao.pojo.dto.CastDto;
@@ -18,37 +19,33 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 public class LLMServiceFactory {
-    
+
     private final LLMService volcengineLLMService;
     private final LLMService dashScopeLLMService;
-    
-    @Value("${ai.default-llm-service:volcengine}")
+
+    @Value("${ai.default-llm-service:dashscope}")
     private String defaultLLMServiceCode;
-    
+
     public LLMServiceFactory(
             @Qualifier("volcengineLLMService") LLMService volcengineLLMService,
             @Qualifier("dashScopeLLMService") LLMService dashScopeLLMService) {
         this.volcengineLLMService = volcengineLLMService;
         this.dashScopeLLMService = dashScopeLLMService;
-        
+
         log.info("LLM服务工厂初始化完成，默认服务类型: {}", defaultLLMServiceCode);
     }
-    
+
     /**
      * 获取默认的LLM服务实现
      */
     public LLMService getDefaultLLMService() {
         LLMServiceType defaultType = LLMServiceType.fromvalue(defaultLLMServiceCode);
-        if (defaultType == null) {
-            log.warn("配置的默认服务类型 '{}' 无效，使用VOLCENGINE作为默认值", defaultLLMServiceCode);
-            defaultType = LLMServiceType.VOLCENGINE;
-        }
         return getLLMService(defaultType);
     }
-    
+
     /**
      * 根据服务类型枚举获取LLM服务实现
-     * 
+     *
      * @param serviceType 服务类型枚举
      * @return 对应的LLM服务实现
      */
@@ -57,7 +54,7 @@ public class LLMServiceFactory {
             log.warn("未指定服务类型，使用默认服务");
             return getDefaultLLMService();
         }
-        
+
         switch (serviceType) {
             case VOLCENGINE:
                 return volcengineLLMService;
@@ -75,13 +72,34 @@ public class LLMServiceFactory {
      */
     public String generateText(String systemPrompt, String prompt, CastDto castDto) throws NoApiKeyException, InputRequiredException {
         //如果有一个为null，则优先用系统提供的大语言模型实现
-        if(castDto.getLlmServiceType() == null || castDto.getModelId() == null || castDto.getApiKey() == null){
-            return getLLMService(castDto.getLlmServiceType()).generateText(systemPrompt, prompt);
+        if (castDto.getLlmServiceType() == null || castDto.getModelId() == null || castDto.getApiKey() == null) {
+            return getLLMService(LLMServiceType.DASHSCOPE).generateText(systemPrompt, prompt, ModelType.DeepSeek, null);
         }
 
         //都不为空则调用自定义的资源实现
         return getLLMService(castDto.getLlmServiceType()).generateText(systemPrompt, prompt, castDto.getModelId(), castDto.getApiKey());
     }
 
+    /**
+     * 图片处理
+     */
+    public String generateTextByImage(String systemPrompt, String userPrompt, String imageUrl) {
+        try {
+            String resultString = getLLMService(LLMServiceType.DASHSCOPE).generateTextByImage(systemPrompt, userPrompt, imageUrl, ModelType.qwenVLPlus.getDashScopeValue());
+            return cleanJson(resultString);
+        } catch (NoApiKeyException | UploadFileException e) {
+            log.error("调用图片处理接口失败: {}", e.getMessage());
+            return "图片处理失败，请稍后再试。";
+        }
+    }
 
-} 
+    public static String cleanJson(String raw) {
+        if (raw == null) return "";
+        return raw
+                .replaceAll("(?s)```json", "")  // 去掉开头的 ```json
+                .replaceAll("(?s)```", "")      // 去掉结尾的 ```
+                .trim();
+    }
+
+
+}

@@ -2,31 +2,35 @@ package com.divination.liuyao.service;
 
 import com.alibaba.dashscope.exception.InputRequiredException;
 import com.alibaba.dashscope.exception.NoApiKeyException;
+import com.alibaba.dashscope.utils.JsonUtils;
 import com.divination.liuyao.assemblies.enums.CastType;
 import com.divination.liuyao.mapper.AiLiuyaoHistoryMapper;
 import com.divination.liuyao.mapper.TaskMapper;
 import com.divination.liuyao.mapper.UserMapper;
 import com.divination.liuyao.pojo.dto.CastDto;
 import com.divination.liuyao.pojo.entity.AiLiuyaoHistory;
+import com.divination.liuyao.pojo.entity.Prediction;
 import com.divination.liuyao.pojo.entity.Task;
 import com.divination.liuyao.pojo.model.AiResult;
 import com.divination.liuyao.pojo.model.Hexagram;
 import com.divination.liuyao.service.factory.LLMServiceFactory;
-import com.divination.liuyao.util.BaZiUtil;
-import com.divination.liuyao.util.ConstantUtil;
-import com.divination.liuyao.util.RedisUtil;
-import com.divination.liuyao.util.TaskConstants;
+import com.divination.liuyao.util.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.scheduling.annotation.Async;
-
-import javax.annotation.PostConstruct;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.multipart.MultipartFile;
+import static com.divination.liuyao.util.ConstantUtil.IMAGE_PROCESSING_PROMPT_WORDS2;
 
 @Slf4j
 @Service
@@ -38,8 +42,19 @@ public class AiAnalysisService {
     private final UserMapper userMapper;
     private final RedisUtil redisUtil;
     private final ObjectMapper objectMapper;
-    private final LLMServiceFactory llmServiceFactory;
+    @Autowired
+    private LLMServiceFactory llmServiceFactory;
 
+    // 允许的图片 MIME 类型
+    private final List<String> IMAGE_TYPES = Arrays.asList(
+            "image/png",
+            "image/jpeg",
+            "image/jpg",
+            "image/gif",
+            "image/bmp",
+            "image/webp"
+    );
+    
     public AiAnalysisService(
             TaskMapper taskMapper,
             HexagramService hexagramService,
@@ -135,6 +150,29 @@ public class AiAnalysisService {
                 log.error("删除Redis锁失败: {}", e.getMessage(), e);
             }
         }
+    }
+
+    /**
+     * 上传图片，识别文字
+     */
+    public ResponseEntity<String> recognizeTextByImage(@RequestParam("file") MultipartFile file) {
+        if(file.isEmpty()) {
+            return ResponseEntity.badRequest().body("文件不能为空！");
+        }
+        String fileName = file.getOriginalFilename();
+        String username = UserContextHolder.getUsername();
+        String ossPath = "recognizeImage/" + username;
+        String ossUrl;
+        try {
+            ossUrl = OSSUtil.uploadFile(ossPath, fileName, file.getInputStream());
+        } catch (Exception e) {
+            log.error("文件上传OSS失败", e);
+            return null;
+        }
+        String string = llmServiceFactory.generateTextByImage(ConstantUtil.IMAGE_SYSTEM_PROMPT, IMAGE_PROCESSING_PROMPT_WORDS2, ossUrl);
+        Prediction prediction = JsonUtils.fromJson(string, Prediction.class);
+
+        return ResponseEntity.ok("上传成功，文件类型：" + prediction);
     }
 
     /**

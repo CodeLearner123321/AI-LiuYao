@@ -1,5 +1,7 @@
 package com.divination.liuyao.service.impl;
 
+import com.alibaba.dashscope.exception.NoApiKeyException;
+import com.alibaba.dashscope.exception.UploadFileException;
 import com.divination.liuyao.assemblies.enums.LLMServiceType;
 import com.divination.liuyao.assemblies.enums.ModelType;
 import com.divination.liuyao.service.LLMService;
@@ -30,18 +32,6 @@ public class VolcengineLLMServiceImpl implements LLMService {
     @Value("${ai.volcengine.api.key:null}")
     private String apiKey;
 
-    @Value("${ai.volcengine.model.id:null}")
-    private String modelId;
-
-    @Value("${ai.volcengine.model.name:null}")
-    private String modelName;
-
-    @Value("${ai.volcengine.max-tokens:2000}")
-    private int maxTokens;
-
-    @Value("${ai.volcengine.temperature:0.7}")
-    private double temperature;
-
     private ArkService arkService;
 
     @PostConstruct
@@ -50,15 +40,7 @@ public class VolcengineLLMServiceImpl implements LLMService {
         arkService = ArkService.builder()
             .apiKey(apiKey)
             .build();
-        log.info("火山引擎AI服务初始化完成，使用模型: {}", modelName);
-    }
-
-    /**
-     * 返回模型名称
-     */
-    @Override
-    public String getModelName() {
-        return modelName;
+        log.info("火山引擎AI服务初始化完成");
     }
     
     /**
@@ -67,59 +49,6 @@ public class VolcengineLLMServiceImpl implements LLMService {
     @Override
     public LLMServiceType getLLMServiceType() {
         return LLMServiceType.VOLCENGINE;
-    }
-
-    /**
-     * 调用火山引擎API生成文本
-     */
-    @Override
-    public String generateText(String systemPrompt, String userPrompt) {
-        if (apiKey == null || apiKey.isEmpty()) {
-            throw new IllegalStateException("火山引擎API密钥未设置，请检查配置。");
-        }
-
-        try {
-            // 创建消息列表
-            final List<ChatMessage> messages = new ArrayList<>();
-
-            // 添加系统消息
-            final ChatMessage systemMessage = ChatMessage.builder()
-                .role(ChatMessageRole.SYSTEM)
-                .content(systemPrompt)
-                .build();
-
-            // 添加用户消息
-            final ChatMessage userMessage = ChatMessage.builder()
-                .role(ChatMessageRole.USER)
-                .content(userPrompt)
-                .build();
-
-            messages.add(systemMessage);
-            messages.add(userMessage);
-
-            // 创建请求
-            ChatCompletionRequest chatCompletionRequest = ChatCompletionRequest.builder()
-                .model(modelId)
-                .messages(messages)
-                .maxTokens(maxTokens)
-                .temperature(temperature)
-                .build();
-
-            log.debug("使用SDK发送请求到火山引擎API，使用模型ID: {}", modelId);
-
-            // 发送请求并获取响应
-            String response = (String) arkService.createChatCompletion(chatCompletionRequest)
-                .getChoices()
-                .get(0)
-                .getMessage()
-                .getContent();
-
-            return response;
-
-        } catch (Exception e) {
-            log.error("调用火山引擎API时发生错误: ", e);
-            throw new RuntimeException("调用火山引擎API时发生错误: " + e.getMessage(), e);
-        }
     }
 
     /**
@@ -135,7 +64,7 @@ public class VolcengineLLMServiceImpl implements LLMService {
         String contents = "";
         try {
             // 创建ArkService实例
-            ArkService arkService = ArkService.builder().apiKey(apiKey)
+            ArkService arkService = ArkService.builder().apiKey(apiKey == null ? this.apiKey : apiKey)
                 .timeout(Duration.ofMinutes(3))// 深度推理模型耗费时间会较长，请您设置较大的超时时间，避免超时导致任务失败。推荐30分钟以上 ？？？
                 .build();
             // 创建用户消息
@@ -157,5 +86,10 @@ public class VolcengineLLMServiceImpl implements LLMService {
         }
 
         return contents;
+    }
+
+    @Override
+    public String generateTextByImage(String systemPrompt, String userPrompt, String imageUrl, String modelId) throws NoApiKeyException, UploadFileException {
+        return "";
     }
 } 

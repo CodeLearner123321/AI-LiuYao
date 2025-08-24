@@ -38,7 +38,7 @@ spring:
 # AI服务配置示例
 ai:
     # 默认使用的LLM服务类型：volcengine 或 dashscope
-    default-llm-service: volcengine
+    default-llm-service: dashscope
     # 火山引擎配置
     volcengine:
         api:
