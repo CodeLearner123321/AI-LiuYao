@@ -9,6 +9,7 @@ import com.divination.liuyao.pojo.dto.UserPermissionDTO;
 import com.divination.liuyao.pojo.entity.User;
 import com.divination.liuyao.pojo.enums.UserRoleType;
 import com.divination.liuyao.pojo.enums.ViewPermission;
+import com.divination.liuyao.pojo.model.Hexagram;
 import com.divination.liuyao.pojo.vo.BaGuaVo;
 import com.divination.liuyao.pojo.vo.TaskQueryVO;
 import com.divination.liuyao.result.RespEntity;
@@ -25,9 +26,13 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.validation.Valid;
 import java.util.HashMap;
@@ -39,8 +44,11 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class LiuyaoController {
 
-    private final HexagramService hexagramService;
-    private final TaskService taskService;
+    @Autowired
+    private HexagramService hexagramService;
+
+    @Autowired
+    private TaskService taskService;
     
     @Value("${ai.default-llm-service:volcengine}")
     private String defaultLLMService;
@@ -116,6 +124,19 @@ public class LiuyaoController {
     public RespEntity<BaGuaVo> calculateLiuYao(@Valid @RequestBody BaGuaDto baGuaDto) {
         BaGuaVo baGuaVo = hexagramService.calculateLiuYao(baGuaDto);
         return RespEntity.ok(baGuaVo);
+    }
+
+    /**
+     * 上传图片，识别文字
+     */
+    @PostMapping("/recognize")
+    public RespEntity<Hexagram> recognizeText(@RequestParam("file") MultipartFile file) {
+        try {
+            return RespEntity.ok(hexagramService.recognizeTextByImage(file));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return RespEntity.error("图片识别失败");
+        }
     }
 
     /**

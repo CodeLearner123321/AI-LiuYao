@@ -11,6 +11,10 @@ public class Prediction {
     private Gua gua;
     private Time time;
 
+    public boolean check() {
+        return description != null && gua != null && time != null;
+    }
+
     @Data
     public static class Description {
         private String question;

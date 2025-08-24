@@ -89,6 +89,25 @@ public class BaGua {
         return baGua;
     }
 
+    /**
+     * 根据卦名创建六爻卦
+     */
+    public static BaGua createBaGuaName(String guaName){
+        return BAGUA_MAP.values().stream()
+                .filter(baGua -> Objects.equals(baGua.getName(), guaName))
+                .findFirst().orElse(null);
+    }
+
+    /**
+     * 根据卦名创建六爻卦
+     */
+    public static String findNumberByGuaName(String guaName){
+        return BAGUA_MAP.entrySet().stream()
+                .filter(baGua -> Objects.equals(baGua.getValue().getName(), guaName))
+                .map(Map.Entry::getKey)
+                .findFirst().orElse("");
+    }
+
 
     /**
      * 返回本卦的更多信息

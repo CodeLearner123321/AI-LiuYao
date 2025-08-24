@@ -48,6 +48,22 @@ public class BaZi {
     private DiZhi hourDiZhi;
 
     public void initXunKong(){
+        if(year == null && yearTianGan != null && yearDiZhi != null){
+            year = yearTianGan.getName() + yearDiZhi.getName();
+        }
+        if(month == null && monthTianGan != null && monthDiZhi != null){
+            month = monthTianGan.getName() + monthDiZhi.getName();
+        }
+        if(day == null && dayTianGan != null && dayDiZhi != null){
+            day = dayTianGan.getName() + dayDiZhi.getName();
+        }
+        if(hour == null && hourTianGan != null && hourDiZhi != null){
+            hour = hourTianGan.getName() + hourDiZhi.getName();
+        }
+        if(day != null){
+            this.dayToNull = BaZiUtil.transitionXunKong(day);
+        }
+
         if(year == null || month == null || day == null || hour == null ||
             year.isEmpty() || month.isEmpty() || day.isEmpty() || hour.isEmpty()){
             return;
@@ -58,4 +74,12 @@ public class BaZi {
         this.hourToNull = BaZiUtil.transitionXunKong(hour);
     }
 
-} 
+    @Override
+    public String toString() {
+        return year == null ? "" : "年柱" + year + " " +
+            (month == null ? "" : "月柱" + month) + " " + (monthToNull == null ? "" : "(" + monthToNull) + "旬)" +
+            (day == null ? "" : "日柱" + day) + " " +
+            (hour == null ? "" : "时柱" + hour) + "\n"
+                ;
+    }
+}

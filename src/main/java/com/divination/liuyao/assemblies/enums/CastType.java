@@ -17,7 +17,11 @@ public enum CastType {
     /**
      * 系统时间起卦
      */
-    TIME("系统时间起卦");
+    TIME("系统时间起卦"),
+
+    IMAGE("图片起卦");
+
+    ;
 
 
     private final String description;

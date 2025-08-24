@@ -47,7 +47,7 @@ public enum TianGan {
                 return value;
             }
         }
-        throw new IllegalArgumentException("No TianGan found with name: " + name);
+        return null;
     }
 
     @JsonValue

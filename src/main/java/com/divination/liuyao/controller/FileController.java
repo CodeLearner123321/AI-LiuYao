@@ -5,6 +5,7 @@ import com.divination.liuyao.pojo.dto.BookInfoDTO;
 import com.divination.liuyao.pojo.dto.PageRequestDTO;
 import com.divination.liuyao.pojo.dto.PageResultDTO;
 import com.divination.liuyao.pojo.entity.FileInfo;
+import com.divination.liuyao.pojo.model.Hexagram;
 import com.divination.liuyao.result.RespEntity;
 import com.divination.liuyao.service.AiAnalysisService;
 import com.divination.liuyao.service.FileService;
@@ -71,21 +72,6 @@ public class FileController {
         } catch (Exception e) {
             log.error("获取系统书籍列表失败", e);
             return RespEntity.error("获取系统书籍列表失败");
-        }
-    }
-
-    /**
-     * 上传图片，识别文字
-     */
-    @PostMapping("/recognize")
-    public ResponseEntity<String> recognizeText(@RequestParam("file") MultipartFile file) {
-        try {
-            aiAnalysisService.recognizeTextByImage(file);
-
-            return ResponseEntity.ok("1");
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.badRequest().body("识别失败: " + e.getMessage());
         }
     }
 

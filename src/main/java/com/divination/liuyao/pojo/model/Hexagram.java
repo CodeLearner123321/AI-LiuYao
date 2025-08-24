@@ -42,6 +42,41 @@ public class Hexagram extends BaGuaVo{
      */
     private String aiAnalysis;
 
+    /**
+     * 问题描述
+     */
+    private String questionDescription;
+
+    /**
+     * 问题背景
+     */
+    private String questionBackground;
+
+    public static BaGuaVo createBaGuaVoByTimestamp(BaGuaDto baGuaDto) {
+        Long timestamp = baGuaDto.getTimestamp();
+        if (timestamp == null) {
+            timestamp = System.currentTimeMillis();
+            log.warn("获取前端返回时间戳失败！BaGuaDto：" + baGuaDto.toString());
+        }
+
+        // 与4095取余
+        int remainder = (int)(timestamp % 4095);
+
+        // 转换为二进制字符串，确保至少有12位
+        String binary = String.format("%12s", Integer.toBinaryString(remainder)).replace(' ', '0');
+
+
+        StringBuilder stringBuilder = new StringBuilder();
+        // 时间戳对应的高位为上爻，低位为初爻
+        for (int i = 5; i >= 0; i--) {
+            int startIndex = i * 2;
+            String twoBits = binary.substring(startIndex, startIndex + 2);
+            int value = Integer.parseInt(twoBits, 2);
+            stringBuilder.append(value);
+        }
+        baGuaDto.setNumber(stringBuilder.toString());
+        return createBaGuaVoByNumber(baGuaDto);
+    }
 
     /**
      * 0-老阴，1-少阳，2-少阴，3-老阳
@@ -83,9 +118,46 @@ public class Hexagram extends BaGuaVo{
         return baGuaVo;
     }
 
+
     /**
-     * 构造神煞
+     * 根据主卦和变卦创建六爻卦象
      */
+    public static BaGuaVo createBaGuaVoByBagua(BaGua originBaGuaDto, BaGua changedBaGua, BaZi baZi) {
+        BaGuaVo baGuaVo = new BaGuaVo();
+        if(originBaGuaDto == null || originBaGuaDto.getName() == null){
+            return new BaGuaVo();
+        }
+        String originBaGuaNumber = BaGua.findNumberByGuaName(originBaGuaDto.getName());
+        String changeBaGuaNumber = BaGua.findNumberByGuaName(changedBaGua.getName());
+        byte[] isChangeMap = new byte[]{0,0,0,0,0,0};
+        Boolean isChange = false;
+        for (int i = 0; i < originBaGuaNumber.length(); i++) {
+            char originChar = originBaGuaNumber.charAt(i);
+            char changeChar = changeBaGuaNumber.charAt(i);
+            if(originChar != changeChar){
+                isChange = true;
+                isChangeMap[i] = 1;
+            }
+        }
+        BaGua originBaGua = BaGua.createBaGua(isChangeMap, originBaGuaNumber);
+        baGuaVo.setOriginalBaGua(BaGua.createBaGua(isChangeMap, originBaGuaNumber));
+        baGuaVo.setExistChanged(isChange);
+        baGuaVo.setChangedBaGua(isChange
+                ? BaGua.createChangeBaGua(BaGua.GONG_WEI_TO_SHU_XIN.get(originBaGua.getGongWei()), changeBaGuaNumber)
+                : null);
+        baGuaVo.setLocalDateTime(null);
+
+        compositionLiuShen(baGuaVo.getOriginalBaGua(), baZi.getDayTianGan());
+        baGuaVo.setShenSha(null);
+        baGuaVo.setBaZi(null);
+        baGuaVo.formatting();
+        return baGuaVo;
+
+    }
+
+        /**
+         * 构造神煞
+         */
     private static List<String> createShenSha(DiZhi yearDiZhi,DiZhi monthDiZhi, DiZhi dayDiZhi, TianGan dayTianGan) {
         List<String> str = new ArrayList<>();
         str.add(ConstantUtil.YI_MA + "-" + dayDiZhi.getYiMa());
@@ -127,32 +199,6 @@ public class Hexagram extends BaGuaVo{
         }
     }
 
-    public static BaGuaVo createBaGuaVoByTimestamp(BaGuaDto baGuaDto) {
-        Long timestamp = baGuaDto.getTimestamp();
-        if (timestamp == null) {
-            timestamp = System.currentTimeMillis();
-            log.warn("获取前端返回时间戳失败！BaGuaDto：" + baGuaDto.toString());
-        }
-
-        // 与4095取余
-        int remainder = (int)(timestamp % 4095);
-
-        // 转换为二进制字符串，确保至少有12位
-        String binary = String.format("%12s", Integer.toBinaryString(remainder)).replace(' ', '0');
-
-
-        StringBuilder stringBuilder = new StringBuilder();
-        // 时间戳对应的高位为上爻，低位为初爻
-        for (int i = 5; i >= 0; i--) {
-            int startIndex = i * 2;
-            String twoBits = binary.substring(startIndex, startIndex + 2);
-            int value = Integer.parseInt(twoBits, 2);
-            stringBuilder.append(value);
-        }
-        baGuaDto.setNumber(stringBuilder.toString());
-        return createBaGuaVoByNumber(baGuaDto);
-    }
-
 
     static {
         TIAN_GAN_LIU_SHEN_MAP.put(TianGan.JIA,LiuShen.QINGLONG);
@@ -166,4 +212,4 @@ public class Hexagram extends BaGuaVo{
         TIAN_GAN_LIU_SHEN_MAP.put(TianGan.REN,LiuShen.XUANWU);
         TIAN_GAN_LIU_SHEN_MAP.put(TianGan.GUI,LiuShen.XUANWU);
     }
-} 
+}

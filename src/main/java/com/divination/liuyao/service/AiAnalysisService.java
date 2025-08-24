@@ -36,14 +36,20 @@ import static com.divination.liuyao.util.ConstantUtil.IMAGE_PROCESSING_PROMPT_WO
 @Service
 public class AiAnalysisService {
 
-    private final TaskMapper taskMapper;
-    private final HexagramService hexagramService;
-    private final AiLiuyaoHistoryMapper historyMapper;
-    private final UserMapper userMapper;
-    private final RedisUtil redisUtil;
-    private final ObjectMapper objectMapper;
+    @Autowired
+    private TaskMapper taskMapper;
+    @Autowired
+    private AiLiuyaoHistoryMapper historyMapper;
+    @Autowired
+    private UserMapper userMapper;
+    @Autowired
+    private RedisUtil redisUtil;
+    @Autowired
+    private ObjectMapper objectMapper;
     @Autowired
     private LLMServiceFactory llmServiceFactory;
+    @Autowired
+    private HexagramService hexagramService;
 
     // 允许的图片 MIME 类型
     private final List<String> IMAGE_TYPES = Arrays.asList(
@@ -54,23 +60,6 @@ public class AiAnalysisService {
             "image/bmp",
             "image/webp"
     );
-    
-    public AiAnalysisService(
-            TaskMapper taskMapper,
-            HexagramService hexagramService,
-            AiLiuyaoHistoryMapper historyMapper,
-            UserMapper userMapper,
-            RedisUtil redisUtil,
-            ObjectMapper objectMapper,
-            LLMServiceFactory llmServiceFactory) {
-        this.taskMapper = taskMapper;
-        this.hexagramService = hexagramService;
-        this.historyMapper = historyMapper;
-        this.userMapper = userMapper;
-        this.redisUtil = redisUtil;
-        this.objectMapper = objectMapper;
-        this.llmServiceFactory = llmServiceFactory;
-    }
 
     /**
      * 异步执行AI分析任务
@@ -150,29 +139,6 @@ public class AiAnalysisService {
                 log.error("删除Redis锁失败: {}", e.getMessage(), e);
             }
         }
-    }
-
-    /**
-     * 上传图片，识别文字
-     */
-    public ResponseEntity<String> recognizeTextByImage(@RequestParam("file") MultipartFile file) {
-        if(file.isEmpty()) {
-            return ResponseEntity.badRequest().body("文件不能为空！");
-        }
-        String fileName = file.getOriginalFilename();
-        String username = UserContextHolder.getUsername();
-        String ossPath = "recognizeImage/" + username;
-        String ossUrl;
-        try {
-            ossUrl = OSSUtil.uploadFile(ossPath, fileName, file.getInputStream());
-        } catch (Exception e) {
-            log.error("文件上传OSS失败", e);
-            return null;
-        }
-        String string = llmServiceFactory.generateTextByImage(ConstantUtil.IMAGE_SYSTEM_PROMPT, IMAGE_PROCESSING_PROMPT_WORDS2, ossUrl);
-        Prediction prediction = JsonUtils.fromJson(string, Prediction.class);
-
-        return ResponseEntity.ok("上传成功，文件类型：" + prediction);
     }
 
     /**
@@ -271,7 +237,11 @@ public class AiAnalysisService {
             }
 
             //时间
-            prompt.append("时间： " + BaZiUtil.getAllByLocalDateTime(hexagram.getLocalDateTime()) + "\n");
+            if(hexagram.getLocalDateTime() == null){
+                prompt.append("时间： " + hexagram.getBaZi().toString() + "\n");
+            } else {
+                prompt.append("时间： " + BaZiUtil.getAllByLocalDateTime(hexagram.getLocalDateTime()) + "\n");
+            }
             //卦名
             prompt.append(hexagram.getGuaStringByPosition(hexagram.isExistChanged()) + "\n");
             //神煞

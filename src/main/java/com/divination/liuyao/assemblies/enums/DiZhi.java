@@ -1,6 +1,8 @@
 package com.divination.liuyao.assemblies.enums;
 
 import com.fasterxml.jackson.annotation.JsonValue;
+
+import java.util.Arrays;
 import java.util.Objects;
 
 public enum DiZhi {
@@ -59,6 +61,13 @@ public enum DiZhi {
             }
         }
         throw new IllegalArgumentException("No DiZhi found with name: " + name);
+    }
+
+    public static DiZhi formatDiZhiByName(String name) {
+        return Arrays.asList(DiZhi.values()).stream()
+                .filter(value -> Objects.equals(value.getName(), name))
+                .findFirst()
+                .orElse(null);
     }
 
     @JsonValue
