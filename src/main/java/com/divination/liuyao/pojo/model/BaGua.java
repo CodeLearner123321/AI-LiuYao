@@ -108,6 +108,28 @@ public class BaGua {
                 .findFirst().orElse("");
     }
 
+    /**
+     * 根据两个原始的本卦和变卦，生成一个卦象数字
+     */
+    public static String getStringByBaGua(BaGua originalBaGua, BaGua changedBaGua) {
+        StringBuilder result = new StringBuilder();
+        Yao[] originalYaos = originalBaGua.getYaos();
+        Yao[] changedYaos = changedBaGua.getYaos();
+
+        for (int i = 0; i < 6; i++) {
+            if (originalYaos[i].isNull() || changedYaos[i].isNull()) {
+                result.append('0'); // 空爻视为阴爻
+            } else if (Objects.equals(originalYaos[i].getValue(), changedYaos[i].getValue())) {
+                result.append(originalYaos[i].getValue());
+            } else {
+                //如果不相等说明是变爻
+                result.append(Objects.equals(originalYaos[i].getValue(), 1) ? 3 : 0);
+            }
+        }
+
+        return result.toString();
+    }
+
 
     /**
      * 返回本卦的更多信息

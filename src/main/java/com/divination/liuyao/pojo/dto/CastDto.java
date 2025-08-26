@@ -26,7 +26,7 @@ public class CastDto extends BaGuaDto{
     /**
      * 背景
      */
-    @NotBlank(message = "问题不能为空")
+    @NotBlank(message = "背景不能为空")
     private String background;
 
     /**

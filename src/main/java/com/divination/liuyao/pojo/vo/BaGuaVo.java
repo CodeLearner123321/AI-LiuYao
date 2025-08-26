@@ -48,6 +48,8 @@ public class BaGuaVo {
      */
     private BaZi baZi;
 
+    private String customTime;
+
     /**
      * 根据爻位返回对应爻位的信息
      * 初爻：0 二爻：1.。。。。。上爻：5

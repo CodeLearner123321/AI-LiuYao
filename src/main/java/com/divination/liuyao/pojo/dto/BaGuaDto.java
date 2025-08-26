@@ -37,4 +37,9 @@ public class BaGuaDto {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime castTime;
 
+    /**
+     * 自定义时间（如果时图像识别，则会出现这个时间）
+     */
+    private String customTime;
+
 }

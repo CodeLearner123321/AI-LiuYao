@@ -51,10 +51,11 @@ public class HexagramService {
                 return Hexagram.createBaGuaVoByTimestamp(baGuaDto);
             case RANDOM:
             case MANUAL:
+            case IMAGE:
                 // 数字起卦
                 return Hexagram.createBaGuaVoByNumber(baGuaDto);
             default:
-                throw new IllegalArgumentException("卦象创建失败");
+                throw new IllegalArgumentException("卦象创建失败，参数错误,baGuaDto:" + JsonUtil.toJson(baGuaDto));
         }
     }
 
@@ -90,7 +91,8 @@ public class HexagramService {
         hexagram.setExistChanged(baGuaVo.getExistChanged());
         hexagram.setShenSha(baGuaVo.getShenSha());
         hexagram.setLocalDateTime(baGuaVo.getLocalDateTime());
-        
+        hexagram.setCustomTime(baGuaVo.getCustomTime());
+
         return hexagram;
     }
 
@@ -134,6 +136,7 @@ public class HexagramService {
         hexagram.setBaZi(baZi);
         hexagram.setQuestionDescription(prediction.getDescription() == null ? null : prediction.getDescription().getQuestion());
         hexagram.setQuestionBackground(prediction.getDescription() == null ? null : prediction.getDescription().getBackground());
+        hexagram.setNumber(BaGua.getStringByBaGua(baGuaVo.getOriginalBaGua(), baGuaVo.getChangedBaGua()));
         return hexagram;
     }
 

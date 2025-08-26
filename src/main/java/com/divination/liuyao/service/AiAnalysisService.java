@@ -237,15 +237,19 @@ public class AiAnalysisService {
             }
 
             //时间
-            if(hexagram.getLocalDateTime() == null){
+            if(hexagram.getCustomTime() != null && !hexagram.getCustomTime().isEmpty()){
+                prompt.append("时间： " + hexagram.getCustomTime() + "\n");
+            } else if(hexagram.getLocalDateTime() == null && hexagram.getBaZi() != null){
                 prompt.append("时间： " + hexagram.getBaZi().toString() + "\n");
-            } else {
+            } else if(hexagram.getLocalDateTime() != null){
                 prompt.append("时间： " + BaZiUtil.getAllByLocalDateTime(hexagram.getLocalDateTime()) + "\n");
             }
             //卦名
             prompt.append(hexagram.getGuaStringByPosition(hexagram.isExistChanged()) + "\n");
             //神煞
-            prompt.append(hexagram.getShenShaString() + "\n");
+            if(hexagram.getShenSha() != null && !hexagram.getShenSha().isEmpty()){
+                prompt.append(hexagram.getShenShaString() + "\n");
+            }
             //从上爻到初爻
             for (int i = 5; i >= 0; i--) {
                 prompt.append(hexagram.getYaoStringByPosition(i, hexagram.isExistChanged()) + "\n");

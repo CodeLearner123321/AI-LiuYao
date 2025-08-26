@@ -15,13 +15,11 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.logging.log4j.util.Strings;
 
 /**
  * 六爻卦象模型
@@ -51,6 +49,12 @@ public class Hexagram extends BaGuaVo{
      * 问题背景
      */
     private String questionBackground;
+
+    /**
+     * 卦对应的数字
+     * 一共六位数字，对应分别为：0-老阴，1-少阳，2-少阴，3-老阳
+     */
+    private String number;
 
     public static BaGuaVo createBaGuaVoByTimestamp(BaGuaDto baGuaDto) {
         Long timestamp = baGuaDto.getTimestamp();
@@ -108,12 +112,19 @@ public class Hexagram extends BaGuaVo{
         baGuaVo.setChangedBaGua(isChange
             ? BaGua.createChangeBaGua(BaGua.GONG_WEI_TO_SHU_XIN.get(originBaGua.getGongWei()), changeNumber.toString())
             : null);
-        baGuaVo.setLocalDateTime(baGuaDto.getCastTime());
+        if(!Objects.equals(CastType.IMAGE.getDescription(), baGuaDto.getCastType().getDescription())){
+            baGuaVo.setLocalDateTime(baGuaDto.getCastTime());
+            BaZi baZi = BaZiUtil.baziConvertByTime(baGuaDto.getCastTime());
+            compositionLiuShen(baGuaVo.getOriginalBaGua(), baZi.getDayTianGan());
+            baGuaVo.setShenSha(createShenSha(baZi.getYearDiZhi(), baZi.getMonthDiZhi(), baZi.getDayDiZhi(), baZi.getDayTianGan()));
+            baGuaVo.setBaZi(baZi);
+        } else if(Strings.isNotBlank(baGuaDto.getCustomTime()) && baGuaDto.getCustomTime().contains("日") && baGuaDto.getCustomTime().length() >= 2){
+            int riIndex = baGuaDto.getCustomTime().indexOf("日");
+            String tianGan = String.valueOf(baGuaDto.getCustomTime().substring(riIndex - 2, riIndex).charAt(0));
+            compositionLiuShen(baGuaVo.getOriginalBaGua(), TianGan.getTianGanByName(tianGan));
 
-        BaZi baZi = BaZiUtil.baziConvertByTime(baGuaDto.getCastTime());
-        compositionLiuShen(baGuaVo.getOriginalBaGua(), baZi.getDayTianGan());
-        baGuaVo.setShenSha(createShenSha(baZi.getYearDiZhi(), baZi.getMonthDiZhi(), baZi.getDayDiZhi(), baZi.getDayTianGan()));
-        baGuaVo.setBaZi(baZi);
+            baGuaVo.setCustomTime(baGuaDto.getCustomTime());
+        }
         baGuaVo.formatting();
         return baGuaVo;
     }
