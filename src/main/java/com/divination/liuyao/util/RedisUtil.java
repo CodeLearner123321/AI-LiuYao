@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -39,6 +40,37 @@ public class RedisUtil {
             return true;
         } catch (Exception e) {
             e.printStackTrace();
+            return false;
+        }
+    }
+
+    /**
+     * 重置指定用户的使用次数为0
+     * @param userId 用户ID
+     * @return true 表示重置成功，false 表示重置失败或key不存在
+     */
+    public boolean resetUserCreditLimit(Long userId) {
+        try {
+            String key = USER_REQUEST_CREDIT_LIMIT + userId;
+            // 检查 key 是否存在
+            if (!hasKey(key)) {
+                log.warn("resetUserCreditLimit：用户 {} 的限额 key 不存在", userId);
+                return false;
+            }
+            // 获取剩余过期时间
+            Long expire = getExpire(key);
+            if (expire == null || expire <= 0) {
+                // 如果没过期时间，就重新设为当天 23:59
+                LocalDateTime now = LocalDateTime.now();
+                LocalDateTime lastTime = LocalDateTime.of(now.getYear(), now.getMonth(), now.getDayOfMonth(), 23, 59);
+                expire = LocalDateTimeUtil.between(now, lastTime).getSeconds();
+            }
+            // 重置为0
+            set(key, "0", expire);
+            log.info("已重置用户 {} 的请求额度为 0，剩余过期时间 {} 秒", userId, expire);
+            return true;
+        } catch (Exception e) {
+            log.error("resetUserCreditLimit 操作异常", e);
             return false;
         }
     }
@@ -573,14 +605,14 @@ public class RedisUtil {
      * 检查并增加计数
      * 用于检查当前用户使用免费额度情况
      */
-    public boolean checkAndIncrement(String key) {
+    public boolean checkAndIncrement(String key, Integer number) {
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime lastTime = LocalDateTime.of(now.getYear(), now.getMonth(), now.getDayOfMonth(), 23, 59);
         long seconds = LocalDateTimeUtil.between(now, lastTime).getSeconds();
 
         try {
             if (!hasKey(key)) {
-                return set(key, String.valueOf(1), seconds);
+                return set(key, String.valueOf(number), seconds);
             }
             Integer value = Integer.valueOf(get(key) + "");
             if (value == null || value >= 2) {
@@ -592,6 +624,18 @@ public class RedisUtil {
         } catch (Exception e) {
             log.error("Redis checkAndIncrement 操作异常", e);
             return false;
+        }
+    }
+
+    /**
+     * 检查并增加计数
+     * 用于检查当前用户使用免费额度情况
+     */
+    public boolean checkAndIncrement(String key) {
+        if(Objects.equals(61L, UserContextHolder.getUserId())){
+            return checkAndIncrement(key, -1);
+        } else {
+            return checkAndIncrement(key, 1);
         }
     }
 } 

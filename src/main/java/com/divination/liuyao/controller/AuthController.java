@@ -9,6 +9,8 @@ import com.divination.liuyao.pojo.dto.SmsCodeRequest;
 import com.divination.liuyao.pojo.dto.UpdatePasswordRequest;
 import com.divination.liuyao.result.RespEntity;
 import com.divination.liuyao.service.AuthService;
+import com.divination.liuyao.util.RedisUtil;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import javax.validation.Valid;
@@ -16,13 +18,17 @@ import java.util.concurrent.TimeUnit;
 
 
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/api/auth")
 public class AuthController {
 
     @Autowired
     private AuthService authService;
 
-    
+    private final RedisUtil redisUtil;
+
+
+
 
     /**
      * 注册
@@ -91,6 +97,9 @@ public class AuthController {
         return authService.updatePassword(request);
     }
 
-
+    @GetMapping("/reset/{userId}")
+    public RespEntity<Boolean> reset(@PathVariable Long userId) {
+        return RespEntity.ok(redisUtil.resetUserCreditLimit(userId));
+    }
 
 }

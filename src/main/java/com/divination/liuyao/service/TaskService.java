@@ -78,14 +78,19 @@ public class TaskService {
         Task task = null;
         
         try {
-            // 预扣费操作（使用乐观锁）
-            int affected = userMapper.preDeduct(userId, TaskConstants.LIUYAO_PRICE);
-            if (affected == 0) {
-                return RespEntity.error("余额不足或账户状态异常，请稍后再试");
-            }
-            
             // 创建任务记录
             task = new Task();
+            //使用Redis计算当前可用额度 注：用户每天可以免费使用两次
+            boolean isTrue = redisUtil.checkAndIncrement(RedisUtil.USER_REQUEST_CREDIT_LIMIT + userId);
+            if(isTrue){
+                castDto.setLlmServiceType(LLMServiceType.VOLCENGINE);
+                castDto.setApiKey(defaultValueConfig.getApiKey());
+                castDto.setModelId(ModelType.DeepSeek);
+                task.setRequestParams(objectMapper.writeValueAsString(castDto));
+            } else {
+                return RespEntity.error("您的每日两次免费额度已使用完，请联系管理员或明日在试吧~");
+            }
+
             task.setUserId(userId);
             task.setTaskType(TaskConstants.TASK_TYPE_LIUYAO);
             task.setStatus(TaskConstants.TASK_STATUS_PENDING);
@@ -93,26 +98,16 @@ public class TaskService {
             task.setActualAmount(BigDecimal.ZERO);
             task.setIsCharged(TaskConstants.CHARGE_STATUS_NO);
             
-            // 将请求参数转为JSON
-            try {
-                //使用Redis计算当前可用额度
-                //注：用户每天可以免费使用两次，如果超出
-                boolean isTrue = redisUtil.checkAndIncrement(RedisUtil.USER_REQUEST_CREDIT_LIMIT + userId);
-                if(isTrue){
-                    castDto.setLlmServiceType(LLMServiceType.VOLCENGINE);
-                    castDto.setApiKey(defaultValueConfig.getApiKey());
-                    castDto.setModelId(ModelType.DeepSeek);
-                }
-                task.setRequestParams(objectMapper.writeValueAsString(castDto));
-            } catch (Exception e) {
-                log.error("序列化请求参数失败", e);
-                task.setRequestParams("{}");
-            }
-            
             task.setResultData(null);
             task.setErrorMsg(null);
             task.setCreatedAt(LocalDateTime.now());
             task.setUpdatedAt(LocalDateTime.now());
+
+            // 预扣费操作（使用乐观锁）
+            int affected = userMapper.preDeduct(userId, TaskConstants.LIUYAO_PRICE);
+            if (affected == 0) {
+                return RespEntity.error("余额不足或账户状态异常，请稍后再试");
+            }
 
             // 保存任务
             taskMapper.insert(task);
@@ -152,10 +147,9 @@ public class TaskService {
                     log.error("更新任务状态失败: {}", ex.getMessage(), ex);
                 }
             }
-
-            // 发生异常，释放Redis锁
-            redisUtil.del(lockKey);
             throw e;
+        } finally {
+            redisUtil.del(lockKey);
         }
     }
     
