@@ -34,6 +34,8 @@ public class User {
     @TableField(fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updatedAt;
 
+    //todo 后续加上免费额度字段 用户可以查看自身免费额度 但是加在这里吗？
+
     /**
      * 返回加密的手机号
      * @return

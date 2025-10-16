@@ -107,6 +107,7 @@ public class AiLiuyaoHistoryService {
         vo.setId(history.getId());
         vo.setQuestion(history.getQuestion());
         vo.setKeyOutcome(history.getKeyOutcome());
+        vo.setDurationSeconds(history.getDurationSeconds());
         return vo;
     }
 } 

@@ -17,6 +17,7 @@
         <result property="keyOutcome" column="key_outcome"/>
         <result property="resultData" column="result_data"/>
         <result property="createTime" column="create_time"/>
+        <result property="durationSeconds" column="duration_seconds"/>
         <result property="amount" column="amount"/>
     </resultMap>
     
@@ -42,7 +43,7 @@
     
     <!-- 根据用户ID查询历史记录列表（简化版，只返回基本信息） -->
     <select id="findQuestionListByUserId" resultMap="historyResultMap">
-        SELECT id, question, key_outcome
+        SELECT id, question, key_outcome, duration_seconds
         FROM ai_liuyao_history
         WHERE user_id = #{userId}
         ORDER BY create_time DESC

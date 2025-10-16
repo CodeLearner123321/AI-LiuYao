@@ -71,6 +71,7 @@ public class AiAnalysisService {
         String lockKey = TaskConstants.TASK_LOCK_PREFIX + task.getUserId() + ":" + TaskConstants.TASK_TYPE_LIUYAO;
 
         try {
+            long start = System.currentTimeMillis();
             // 将requestParams转换为CastDto
             CastDto castDto = objectMapper.readValue(task.getRequestParams(), CastDto.class);
 
@@ -105,7 +106,7 @@ public class AiAnalysisService {
             );
 
             // 保存历史记录
-            saveHistoryRecord(task, castDto, analysis);
+            saveHistoryRecord(task, castDto, analysis, (int) ((System.currentTimeMillis() - start) / 1000));
 
             log.info("六爻分析任务 {} 已完成", task.getId());
         } catch (Exception e) {
@@ -144,7 +145,7 @@ public class AiAnalysisService {
     /**
      * 保存历史记录
      */
-    private void saveHistoryRecord(Task task, CastDto castDto, AiResult aiResult) {
+    private void saveHistoryRecord(Task task, CastDto castDto, AiResult aiResult, Integer durationSeconds) {
         try {
             AiLiuyaoHistory history = new AiLiuyaoHistory();
 
@@ -174,6 +175,7 @@ public class AiAnalysisService {
             // 设置创建时间和消费金额
             history.setCreateTime(LocalDateTime.now());
             history.setAmount(task.getPreAmount().toString());
+            history.setDurationSeconds(durationSeconds);
 
             // 保存历史记录
             historyMapper.insert(history);

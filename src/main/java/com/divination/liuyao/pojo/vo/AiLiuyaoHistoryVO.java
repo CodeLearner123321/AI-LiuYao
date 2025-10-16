@@ -85,6 +85,11 @@ public class AiLiuyaoHistoryVO extends BaGuaVo{
      */
     private String amount;
 
+    /**
+     * 解卦耗时
+     */
+    private Integer durationSeconds;
+
 
     public AiLiuyaoHistoryVO(BaGuaVo baGuaVo) {
         this.setOriginalBaGua(baGuaVo.getOriginalBaGua());

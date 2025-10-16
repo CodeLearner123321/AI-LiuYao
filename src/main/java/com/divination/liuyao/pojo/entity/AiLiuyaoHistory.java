@@ -93,6 +93,13 @@ public class AiLiuyaoHistory {
      */
     private String amount;
 
+    //todo 后续加上一下功能：
+    //提供历史记录耗时展示 + 展示消耗token + 反馈解卦是否正确
+
+    /**
+     * 解卦耗时
+     */
+    private Integer durationSeconds;
 
     /**
      * 转换成BaGuaDto
