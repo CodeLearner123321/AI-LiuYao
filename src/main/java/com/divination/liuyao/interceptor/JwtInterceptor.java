@@ -68,7 +68,7 @@ public class JwtInterceptor implements HandlerInterceptor {
             throw new AuthenticationException("无效的认证令牌", 302);
         } catch (Exception e) {
             log.error("令牌验证失败: {}", e.getMessage(), e);
-            return handleAuthError(response, 302, "登录验证失败: " + e.getMessage());
+            return handleAuthError(response, 302, "登录验证失败: " + "无效的认证令牌");
         }
     }
 

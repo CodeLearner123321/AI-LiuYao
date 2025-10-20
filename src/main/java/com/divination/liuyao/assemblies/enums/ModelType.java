@@ -6,7 +6,7 @@ import java.util.Arrays;
 
 public enum ModelType {
     DeepSeek("deepseek-r1", "deepseek-r1","deepseek-r1-250528"),
-    qwenVLPlus("qwen-vl-plus", "qwen-vl-plus","qwen-vl-plus")
+    qwenVLPlus("qwen-vl-max", "qwen-vl-max","qwen-vl-max")
     ;
 
 

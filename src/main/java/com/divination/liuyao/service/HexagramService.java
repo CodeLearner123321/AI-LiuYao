@@ -11,10 +11,7 @@ import com.divination.liuyao.pojo.model.BaGua;
 import com.divination.liuyao.pojo.model.Hexagram;
 import com.divination.liuyao.pojo.vo.BaGuaVo;
 import com.divination.liuyao.service.factory.LLMServiceFactory;
-import com.divination.liuyao.util.ConstantUtil;
-import com.divination.liuyao.util.JsonUtil;
-import com.divination.liuyao.util.OSSUtil;
-import com.divination.liuyao.util.UserContextHolder;
+import com.divination.liuyao.util.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -76,7 +73,9 @@ public class HexagramService {
             log.error("文件上传OSS失败", e);
             return null;
         }
-        String string = llmServiceFactory.generateTextByImage(ConstantUtil.IMAGE_SYSTEM_PROMPT, IMAGE_PROCESSING_PROMPT_WORDS2, ossUrl);
+        String string = llmServiceFactory.generateTextByImage(ConstantUtil.IMAGE_SYSTEM_PROMPT + AIDocJsonBuilder.generateJsonWithNotes(Prediction.class),
+                IMAGE_PROCESSING_PROMPT_WORDS2, ossUrl);
+        log.info("AI图片分析结果：" + string);
         Prediction prediction = JsonUtils.fromJson(string, Prediction.class);
         return calculateLiuYaoByImage(prediction);
     }
