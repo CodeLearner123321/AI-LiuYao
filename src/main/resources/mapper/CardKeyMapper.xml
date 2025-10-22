@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.divination.liuyao.mapper.CardKeyMapper">
+    
+    <!-- 结果映射 -->
+    <resultMap id="cardKeyResultMap" type="com.divination.liuyao.pojo.entity.CardKey">
+        <id property="id" column="id"/>
+        <result property="cardCode" column="card_code"/>
+        <result property="amount" column="amount"/>
+        <result property="creatorId" column="creator_id"/>
+        <result property="userId" column="user_id"/>
+        <result property="status" column="status"/>
+        <result property="createTime" column="create_time"/>
+        <result property="useTime" column="use_time"/>
+    </resultMap>
+    
+    <!-- 根据卡密码查询卡密 -->
+    <select id="findByCardCode" resultMap="cardKeyResultMap">
+        SELECT * FROM card_key WHERE card_code = #{cardCode} LIMIT 1
+    </select>
+    
+    <!-- 使用卡密（使用乐观锁，只有未使用状态才能更新成功） -->
+    <update id="useCardKey">
+        UPDATE card_key
+        SET status = 1,
+            user_id = #{userId},
+            use_time = NOW()
+        WHERE card_code = #{cardCode}
+          AND status = 0
+    </update>
+    
+    <!-- 批量插入卡密 -->
+    <insert id="batchInsert" parameterType="java.util.List">
+        INSERT INTO card_key (card_code, amount, creator_id, status, create_time)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.cardCode}, #{item.amount}, #{item.creatorId}, #{item.status}, #{item.createTime})
+        </foreach>
+    </insert>
+    
+</mapper>
+

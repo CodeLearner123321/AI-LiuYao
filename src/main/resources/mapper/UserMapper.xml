@@ -94,4 +94,12 @@
         WHERE id = #{userId}
     </update>
     
+    <!-- 充值操作 -->
+    <update id="recharge">
+        UPDATE user
+        SET balance = balance + #{amount},
+            updated_at = NOW()
+        WHERE id = #{userId}
+    </update>
+    
 </mapper> 

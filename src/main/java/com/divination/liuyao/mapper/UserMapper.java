@@ -60,6 +60,15 @@ public interface UserMapper extends BaseMapper<User> {
      * @return 影响的行数
      */
     int refund(@Param("userId") Long userId, @Param("amount") BigDecimal amount);
+    
+    /**
+     * 充值操作，增加用户余额
+     * 
+     * @param userId 用户ID
+     * @param amount 充值金额
+     * @return 影响的行数
+     */
+    int recharge(@Param("userId") Long userId, @Param("amount") BigDecimal amount);
 
     int update(User user);
 } 

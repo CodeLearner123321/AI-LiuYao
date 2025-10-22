@@ -7,6 +7,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
@@ -17,6 +18,7 @@ import com.divination.liuyao.result.RespEntity;
  */
 @Slf4j
 @ControllerAdvice
+@ResponseBody
 public class GlobalExceptionHandler {
 
     /**
@@ -36,6 +38,15 @@ public class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
     public RespEntity<Void> handleAuthenticationException(AuthenticationException e, HttpServletRequest request) {
         log.warn("认证异常: {} 请求路径: {}", e.getMessage(), request.getRequestURI());
+        return RespEntity.error(e.getCode(), e.getMessage());
+    }
+
+    /**
+     * 处理业务异常
+     */
+    @ExceptionHandler(BusinessException.class)
+    public RespEntity<Void> handleBusinessException(BusinessException e, HttpServletRequest request) {
+        log.warn("业务异常: {} 请求路径: {}", e.getMessage(), request.getRequestURI());
         return RespEntity.error(e.getCode(), e.getMessage());
     }
 
