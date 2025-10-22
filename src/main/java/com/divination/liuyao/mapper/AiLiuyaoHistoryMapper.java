@@ -33,4 +33,12 @@ public interface AiLiuyaoHistoryMapper extends BaseMapper<AiLiuyaoHistory> {
      * @return 历史记录对象的可选包装
      */
     Optional<AiLiuyaoHistory> findByTaskId(Long taskId);
+    
+    /**
+     * 更新历史记录的准确性反馈
+     * @param id 记录ID
+     * @param isAccurate 准确性反馈：0-不准确，1-准确
+     * @return 更新影响的行数
+     */
+    int updateIsAccurate(@Param("id") Long id, @Param("isAccurate") Integer isAccurate);
 } 

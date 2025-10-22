@@ -81,25 +81,30 @@ public class AiLiuyaoHistory {
      * 卦象结果数据（JSON格式）
      */
     private String resultData;
-    
-    /**
-     * 创建时间
-     */
-    @TableField(fill = FieldFill.INSERT)
-    private LocalDateTime createTime;
-    
-    /**
-     * 消费金额
-     */
-    private String amount;
 
-    //todo 后续加上一下功能：
-    //提供历史记录耗时展示 + 展示消耗token + 反馈解卦是否正确
 
     /**
      * 解卦耗时
      */
     private Integer durationSeconds;
+
+
+    /**
+     * 是否准确 0：false 1 true
+     */
+    private Integer isAccurate;
+
+
+    /**
+     * 消费金额
+     */
+    private String amount;
+
+    /**
+     * 创建时间
+     */
+    @TableField(fill = FieldFill.INSERT)
+    private LocalDateTime createTime;
 
     /**
      * 转换成BaGuaDto

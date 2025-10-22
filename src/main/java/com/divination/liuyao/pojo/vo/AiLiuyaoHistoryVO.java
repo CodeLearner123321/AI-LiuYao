@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import lombok.NoArgsConstructor;
 
@@ -91,12 +92,18 @@ public class AiLiuyaoHistoryVO extends BaGuaVo{
     private Integer durationSeconds;
 
 
-    public AiLiuyaoHistoryVO(BaGuaVo baGuaVo) {
-        this.setOriginalBaGua(baGuaVo.getOriginalBaGua());
-        this.setChangedBaGua(baGuaVo.getChangedBaGua());
-        this.setExistChanged(baGuaVo.getExistChanged());
-        this.setShenSha(baGuaVo.getShenSha());
-        this.setLocalDateTime(baGuaVo.getLocalDateTime());
-        this.setBaZi(baGuaVo.getBaZi());
+    /**
+     * 是否准确 0：false 1 true
+     */
+    private Integer isAccurate;
+
+
+    public static void mergeFromBaGua(AiLiuyaoHistoryVO vo, BaGuaVo baGuaVo) {
+        vo.setOriginalBaGua(baGuaVo.getOriginalBaGua());
+        vo.setChangedBaGua(baGuaVo.getChangedBaGua());
+        vo.setExistChanged(baGuaVo.getExistChanged());
+        vo.setShenSha(baGuaVo.getShenSha());
+        vo.setLocalDateTime(baGuaVo.getLocalDateTime());
+        vo.setBaZi(baGuaVo.getBaZi());
     }
 }

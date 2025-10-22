@@ -19,6 +19,7 @@
         <result property="createTime" column="create_time"/>
         <result property="durationSeconds" column="duration_seconds"/>
         <result property="amount" column="amount"/>
+        <result property="isAccurate" column="is_accurate"/>
     </resultMap>
     
     <!-- 插入新历史记录 -->
@@ -43,7 +44,7 @@
     
     <!-- 根据用户ID查询历史记录列表（简化版，只返回基本信息） -->
     <select id="findQuestionListByUserId" resultMap="historyResultMap">
-        SELECT id, question, key_outcome, duration_seconds
+        SELECT id, question, key_outcome, duration_seconds, amount, is_accurate
         FROM ai_liuyao_history
         WHERE user_id = #{userId}
         ORDER BY create_time DESC
@@ -87,5 +88,12 @@
         DELETE FROM ai_liuyao_history
         WHERE id = #{id}
     </delete>
+    
+    <!-- 更新准确性反馈 -->
+    <update id="updateIsAccurate">
+        UPDATE ai_liuyao_history
+        SET is_accurate = #{isAccurate}
+        WHERE id = #{id}
+    </update>
     
 </mapper> 

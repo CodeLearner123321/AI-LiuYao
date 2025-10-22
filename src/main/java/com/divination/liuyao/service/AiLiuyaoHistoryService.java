@@ -80,12 +80,8 @@ public class AiLiuyaoHistoryService {
      * 返回的只包含：卦象的所有信息 + 问题 + 问题背景 + 判辞 + 卦象结果
      */
     private AiLiuyaoHistoryVO convertToVO(AiLiuyaoHistory history, BaGuaVo baGuaVo) {
-        AiLiuyaoHistoryVO vo = new AiLiuyaoHistoryVO(baGuaVo);
-        vo.setUserId(history.getUserId());
-        vo.setQuestion(history.getQuestion());
-        vo.setBackground(history.getBackground());
-        vo.setKeyOutcome(history.getKeyOutcome());
-        vo.setCastType(history.getCastType().getDescription());
+        AiLiuyaoHistoryVO vo = convertToVO(history);
+        AiLiuyaoHistoryVO.mergeFromBaGua(vo, baGuaVo);
         // 处理结果数据
         try {
             if (history.getResultData() != null) {
@@ -108,6 +104,45 @@ public class AiLiuyaoHistoryService {
         vo.setQuestion(history.getQuestion());
         vo.setKeyOutcome(history.getKeyOutcome());
         vo.setDurationSeconds(history.getDurationSeconds());
+        vo.setUserId(history.getUserId());
+        vo.setBackground(history.getBackground());
+        vo.setCastType(history.getCastType() != null ? history.getCastType().getDescription() : "");
+        vo.setAmount(history.getAmount());
+        vo.setIsAccurate(history.getIsAccurate());
         return vo;
     }
-} 
+
+    public Boolean deleteById(Long historyId) {
+        historyMapper.deleteById(historyId);
+        return true;
+    }
+    
+    /**
+     * 更新历史记录的准确性反馈
+     * @param historyId 历史记录ID
+     * @param isAccurate 准确性反馈：0-不准确，1-准确
+     * @return 是否更新成功
+     */
+    public Boolean updateFeedback(Long historyId, Integer isAccurate) {
+        // 验证参数
+        if (isAccurate == null || (isAccurate != 0 && isAccurate != 1)) {
+            throw new IllegalArgumentException("准确性反馈参数错误，只能是0（不准确）或1（准确）");
+        }
+        
+        // 验证历史记录是否存在
+        AiLiuyaoHistory history = historyMapper.findById(historyId).orElse(null);
+        if (history == null) {
+            throw new IllegalArgumentException("历史记录不存在");
+        }
+        
+        // 验证记录是否属于当前用户
+        Long userId = UserContextHolder.getUserId();
+        if (userId == null || !history.getUserId().equals(userId)) {
+            throw new IllegalArgumentException("无权操作该历史记录");
+        }
+        
+        // 更新准确性反馈
+        int updated = historyMapper.updateIsAccurate(historyId, isAccurate);
+        return updated > 0;
+    }
+}
