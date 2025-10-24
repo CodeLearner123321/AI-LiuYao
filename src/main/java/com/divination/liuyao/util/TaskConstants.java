@@ -23,6 +23,7 @@ public class TaskConstants {
      */
     public static final int CHARGE_STATUS_NO = 0;
     public static final int CHARGE_STATUS_YES = 1;
+
     
     // Redis中任务锁的前缀
     public static final String TASK_LOCK_PREFIX = "TASK:LOCK:";
@@ -31,5 +32,5 @@ public class TaskConstants {
     public static final int TASK_LOCK_EXPIRE_TIME = 100;
     
     // 任务每个单位的价格（如每次起卦）
-    public static final BigDecimal LIUYAO_PRICE = new BigDecimal("2");
+    public static final BigDecimal LIUYAO_PRICE = new BigDecimal("0.01");
 } 

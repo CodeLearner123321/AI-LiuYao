@@ -5,7 +5,9 @@ import com.alibaba.dashscope.exception.NoApiKeyException;
 import com.alibaba.dashscope.exception.UploadFileException;
 import com.divination.liuyao.assemblies.enums.LLMServiceType;
 import com.divination.liuyao.assemblies.enums.ModelType;
+import com.divination.liuyao.exception.BusinessException;
 import com.divination.liuyao.pojo.dto.CastDto;
+import com.divination.liuyao.pojo.model.AiResult;
 import com.divination.liuyao.service.LLMService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -70,7 +72,7 @@ public class LLMServiceFactory {
      * 超越规则的实现方法
      * 主要是为了兼容用户可以自定义apiKey
      */
-    public String generateText(String systemPrompt, String prompt, CastDto castDto) throws NoApiKeyException, InputRequiredException {
+    public AiResult generateText(String systemPrompt, String prompt, CastDto castDto) throws NoApiKeyException, InputRequiredException {
         //如果有一个为null，则优先用系统提供的大语言模型实现
         if (castDto.getLlmServiceType() == null || castDto.getModelId() == null || castDto.getApiKey() == null) {
             return getLLMService(LLMServiceType.DASHSCOPE).generateText(systemPrompt, prompt, ModelType.DeepSeek, null);
@@ -83,13 +85,12 @@ public class LLMServiceFactory {
     /**
      * 图片处理
      */
-    public String generateTextByImage(String systemPrompt, String userPrompt, String imageUrl) {
+    public AiResult generateTextByImage(String systemPrompt, String userPrompt, String imageUrl) {
         try {
-            String resultString = getLLMService(LLMServiceType.DASHSCOPE).generateTextByImage(systemPrompt, userPrompt, imageUrl, ModelType.qwenVLPlus.getDashScopeValue());
-            return cleanJson(resultString);
+            return getLLMService(LLMServiceType.DASHSCOPE).
+                    generateTextByImage(systemPrompt, userPrompt, imageUrl, ModelType.qwenVLPlus.getDashScopeValue());
         } catch (NoApiKeyException | UploadFileException e) {
-            log.error("调用图片处理接口失败: {}", e.getMessage());
-            return "图片处理失败，请稍后再试。";
+            throw new BusinessException("图片处理失败，请稍后再试。\nexc: " + e.getMessage());
         }
     }
 

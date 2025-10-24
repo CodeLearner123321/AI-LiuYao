@@ -56,6 +56,15 @@ public class Task {
      * 1 - 已扣费
      */
     private Integer isCharged;
+
+    /**
+     * 支付类型
+     * 0：免费额度支付
+     * 1：余额支付
+     * 2：用户自定义API支付
+     * @see com.divination.liuyao.pojo.enums.PaymentType
+     */
+    private Integer paymentType;
     
     /**
      * 请求参数JSON

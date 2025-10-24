@@ -46,11 +46,9 @@ public interface UserMapper extends BaseMapper<User> {
     
     /**
      * 实际扣费操作，将冻结余额清零
-     * 
-     * @param userId 用户ID
-     * @return 影响的行数
      */
-    int confirmDeduct(@Param("userId") Long userId);
+    int confirmDeduct(@Param("userId") Long userId,  @Param("frozenBalance") BigDecimal frozenBalance,
+                      @Param("balance") BigDecimal balance);
     
     /**
      * 退款操作，取消预扣费

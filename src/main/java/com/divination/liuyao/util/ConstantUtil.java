@@ -1,6 +1,8 @@
 package com.divination.liuyao.util;
 
 public class ConstantUtil {
+    public final static Integer USER_FREE_QUOTA = 2;
+
     public final static String USER_REDIS_KEY = "USER_TOKEN";
 
     //默认设备指纹

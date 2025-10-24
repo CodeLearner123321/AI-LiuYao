@@ -1,9 +1,11 @@
 package com.divination.liuyao.assemblies.enums;
 
 import com.fasterxml.jackson.annotation.JsonValue;
+import lombok.Getter;
 
 import java.util.Arrays;
 
+@Getter
 public enum ModelType {
     DeepSeek("deepseek-r1", "deepseek-r1","deepseek-r1-250528"),
     qwenVLPlus("qwen-vl-max", "qwen-vl-max","qwen-vl-max")

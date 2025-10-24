@@ -1,7 +1,13 @@
 package com.divination.liuyao.pojo.model;
 
 import com.divination.liuyao.util.ConstantUtil;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
 public class AiResult {
 
     /**
@@ -14,23 +20,13 @@ public class AiResult {
      */
     private String text;
 
+    private Long inputToken;
+
+    private Long outputToken;
+
+    private Long imageToken;
+
     // Getter and Setter methods
-    
-    public String getKeyOutcome() {
-        return keyOutcome;
-    }
-    
-    public void setKeyOutcome(String keyOutcome) {
-        this.keyOutcome = keyOutcome;
-    }
-    
-    public String getText() {
-        return text;
-    }
-    
-    public void setText(String text) {
-        this.text = text;
-    }
 
     public Boolean isFalse(){
         return ConstantUtil.AI_ERROR_RESULT_KEY.equals(keyOutcome);

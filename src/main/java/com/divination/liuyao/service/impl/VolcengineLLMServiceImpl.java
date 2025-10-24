@@ -4,11 +4,10 @@ import com.alibaba.dashscope.exception.NoApiKeyException;
 import com.alibaba.dashscope.exception.UploadFileException;
 import com.divination.liuyao.assemblies.enums.LLMServiceType;
 import com.divination.liuyao.assemblies.enums.ModelType;
+import com.divination.liuyao.pojo.model.AiResult;
 import com.divination.liuyao.service.LLMService;
-import com.volcengine.ark.runtime.model.completion.chat.ChatCompletionChoice;
-import com.volcengine.ark.runtime.model.completion.chat.ChatCompletionRequest;
-import com.volcengine.ark.runtime.model.completion.chat.ChatMessage;
-import com.volcengine.ark.runtime.model.completion.chat.ChatMessageRole;
+import com.divination.liuyao.util.AIUtil;
+import com.volcengine.ark.runtime.model.completion.chat.*;
 import com.volcengine.ark.runtime.service.ArkService;
 import java.time.Duration;
 import java.util.Collections;
@@ -60,7 +59,7 @@ public class VolcengineLLMServiceImpl implements LLMService {
      * @param apiKey
      */
     @Override
-    public String generateText(String systemPrompt, String userPrompt, ModelType modelType, String apiKey) {
+    public AiResult generateText(String systemPrompt, String userPrompt, ModelType modelType, String apiKey) {
         String contents = "";
         try {
             // 创建ArkService实例
@@ -78,18 +77,23 @@ public class VolcengineLLMServiceImpl implements LLMService {
                 .messages(Collections.singletonList(userMessage)) // 设置消息列表
                 .build();
 
-            contents = arkService.createChatCompletion(chatCompletionRequest).getChoices().stream()
-                .map(choice -> choice.getMessage().stringContent())
-                .collect(Collectors.joining("\n"));
+            ChatCompletionResult chatCompletion = arkService.createChatCompletion(chatCompletionRequest);
+            List<ChatCompletionChoice> choices = chatCompletion.getChoices();
+            contents = choices.stream()
+                    .map(choice -> choice.getMessage().stringContent())
+                    .collect(Collectors.joining("\n"));
+            AiResult aiResult = AIUtil.conductAIResults(contents);
+            aiResult.setInputToken(chatCompletion.getUsage().getPromptTokens());
+            aiResult.setOutputToken(chatCompletion.getUsage().getCompletionTokens());
         } finally {
             arkService.shutdownExecutor();
         }
 
-        return contents;
+        return AIUtil.conductAIResults(contents);
     }
 
     @Override
-    public String generateTextByImage(String systemPrompt, String userPrompt, String imageUrl, String modelId) throws NoApiKeyException, UploadFileException {
-        return "";
+    public AiResult generateTextByImage(String systemPrompt, String userPrompt, String imageUrl, String modelId) throws NoApiKeyException, UploadFileException {
+        return new AiResult();
     }
 } 

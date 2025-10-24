@@ -1,10 +1,13 @@
 package com.divination.liuyao.assemblies.enums;
 
 import com.fasterxml.jackson.annotation.JsonValue;
+import lombok.Data;
+import lombok.Getter;
 
 /**
  * LLM服务类型枚举
  */
+@Getter
 public enum LLMServiceType {
     /**
      * 火山引擎服务

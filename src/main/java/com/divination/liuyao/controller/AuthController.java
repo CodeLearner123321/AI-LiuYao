@@ -9,6 +9,7 @@ import com.divination.liuyao.pojo.dto.SmsCodeRequest;
 import com.divination.liuyao.pojo.dto.UpdatePasswordRequest;
 import com.divination.liuyao.result.RespEntity;
 import com.divination.liuyao.service.AuthService;
+import com.divination.liuyao.service.PaymentService;
 import com.divination.liuyao.util.RedisUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,6 +25,8 @@ public class AuthController {
 
     @Autowired
     private AuthService authService;
+    @Autowired
+    private PaymentService paymentService;
 
     private final RedisUtil redisUtil;
 
@@ -83,7 +86,7 @@ public class AuthController {
      */
     @GetMapping("/get/balance")
     public RespEntity<String> getBalance() {
-        return authService.getBalance();
+        return RespEntity.ok(paymentService.getBalance());
     }
 
     /**

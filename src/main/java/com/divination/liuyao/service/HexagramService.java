@@ -7,6 +7,7 @@ import com.divination.liuyao.pojo.dto.BaGuaDto;
 import com.divination.liuyao.pojo.dto.BaZi;
 import com.divination.liuyao.pojo.dto.CastDto;
 import com.divination.liuyao.pojo.entity.Prediction;
+import com.divination.liuyao.pojo.model.AiResult;
 import com.divination.liuyao.pojo.model.BaGua;
 import com.divination.liuyao.pojo.model.Hexagram;
 import com.divination.liuyao.pojo.vo.BaGuaVo;
@@ -73,10 +74,10 @@ public class HexagramService {
             log.error("文件上传OSS失败", e);
             return null;
         }
-        String string = llmServiceFactory.generateTextByImage(ConstantUtil.IMAGE_SYSTEM_PROMPT + AIDocJsonBuilder.generateJsonWithNotes(Prediction.class),
+        AiResult aiResult = llmServiceFactory.generateTextByImage(ConstantUtil.IMAGE_SYSTEM_PROMPT + AIDocJsonBuilder.generateJsonWithNotes(Prediction.class),
                 IMAGE_PROCESSING_PROMPT_WORDS2, ossUrl);
-        log.info("AI图片分析结果：" + string);
-        Prediction prediction = JsonUtils.fromJson(string, Prediction.class);
+        log.info("AI图片分析结果：" + aiResult.getText());
+        Prediction prediction = JsonUtils.fromJson(aiResult.getText(), Prediction.class);
         return calculateLiuYaoByImage(prediction);
     }
 

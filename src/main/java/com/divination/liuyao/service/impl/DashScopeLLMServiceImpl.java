@@ -2,6 +2,7 @@ package com.divination.liuyao.service.impl;
 
 import com.alibaba.dashscope.aigc.generation.Generation;
 import com.alibaba.dashscope.aigc.generation.GenerationParam;
+import com.alibaba.dashscope.aigc.generation.GenerationResult;
 import com.alibaba.dashscope.aigc.multimodalconversation.MultiModalConversation;
 import com.alibaba.dashscope.aigc.multimodalconversation.MultiModalConversationParam;
 import com.alibaba.dashscope.aigc.multimodalconversation.MultiModalConversationResult;
@@ -13,8 +14,11 @@ import com.alibaba.dashscope.exception.NoApiKeyException;
 import com.alibaba.dashscope.exception.UploadFileException;
 import com.divination.liuyao.assemblies.enums.LLMServiceType;
 import com.divination.liuyao.assemblies.enums.ModelType;
+import com.divination.liuyao.pojo.model.AiResult;
 import com.divination.liuyao.service.LLMService;
 import java.util.Arrays;
+
+import com.divination.liuyao.util.AIUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
@@ -66,7 +70,7 @@ public class DashScopeLLMServiceImpl implements LLMService {
      * @param apiKey
      */
     @Override
-    public String generateText(String systemPrompt, String userPrompt, ModelType modelType, String apiKey)
+    public AiResult generateText(String systemPrompt, String userPrompt, ModelType modelType, String apiKey)
         throws NoApiKeyException, InputRequiredException {
         Generation gen = new Generation();
         Message userMsg = Message.builder()
@@ -79,13 +83,17 @@ public class DashScopeLLMServiceImpl implements LLMService {
             .messages(Arrays.asList(userMsg))
             .resultFormat(GenerationParam.ResultFormat.MESSAGE)
             .build();
-        String content = gen.call(param).getOutput().getChoices().get(0).getMessage().getContent();
+        GenerationResult call = gen.call(param);
+        String content = call.getOutput().getChoices().get(0).getMessage().getContent();
+        AiResult aiResult = AIUtil.conductAIResults(content);
+        aiResult.setInputToken(Long.valueOf(call.getUsage().getInputTokens()));
+        aiResult.setOutputToken(Long.valueOf(call.getUsage().getOutputTokens()));
 
-        return content;
+        return aiResult;
     }
 
     @Override
-    public String generateTextByImage(String systemPrompt, String userPrompt, String imageUrl, String modelId) throws NoApiKeyException, UploadFileException {
+    public AiResult generateTextByImage(String systemPrompt, String userPrompt, String imageUrl, String modelId) throws NoApiKeyException, UploadFileException {
         MultiModalConversation conv = new MultiModalConversation();
         MultiModalMessage systemMessage = MultiModalMessage.builder().role(Role.SYSTEM.getValue())
                 .content(Arrays.asList(
@@ -100,6 +108,14 @@ public class DashScopeLLMServiceImpl implements LLMService {
                 .messages(Arrays.asList(systemMessage, userMessage))
                 .build();
         MultiModalConversationResult result = conv.call(param);
-        return result.getOutput().getChoices().get(0).getMessage().getContent().get(0).get("text").toString();
+        AiResult aiResult = new AiResult();
+        aiResult.setText(result.getOutput().getChoices().get(0).getMessage().getContent().get(0).get("text").toString());
+        aiResult.setInputToken(Long.valueOf(result.getUsage().getInputTokens()));
+        aiResult.setOutputToken(Long.valueOf(result.getUsage().getOutputTokens()));
+        aiResult.setImageToken(Long.valueOf(result.getUsage().getImageTokens()));
+
+        return aiResult;
+
+
     }
 } 
