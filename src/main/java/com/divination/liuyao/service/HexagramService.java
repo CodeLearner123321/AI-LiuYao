@@ -7,6 +7,9 @@ import com.divination.liuyao.pojo.dto.BaGuaDto;
 import com.divination.liuyao.pojo.dto.BaZi;
 import com.divination.liuyao.pojo.dto.CastDto;
 import com.divination.liuyao.pojo.entity.Prediction;
+import com.divination.liuyao.pojo.entity.User;
+import com.divination.liuyao.pojo.enums.AITaskType;
+import com.divination.liuyao.pojo.enums.PaymentType;
 import com.divination.liuyao.pojo.model.AiResult;
 import com.divination.liuyao.pojo.model.BaGua;
 import com.divination.liuyao.pojo.model.Hexagram;
@@ -16,6 +19,7 @@ import com.divination.liuyao.util.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -30,6 +34,8 @@ public class HexagramService {
 
     @Autowired
     private LLMServiceFactory llmServiceFactory;
+    @Autowired
+    private PaymentService paymentService;
     // 爻值常量
     public static final int LAO_YIN = 0;  // 老阴
     public static final int SHAO_YANG = 1;  // 少阳
@@ -60,12 +66,14 @@ public class HexagramService {
     /**
      * 上传图片，识别文字
      */
+    @Transactional(rollbackFor = Exception.class)
     public Hexagram recognizeTextByImage(@RequestParam("file") MultipartFile file) {
         if(file.isEmpty()) {
             return new Hexagram();
         }
         String fileName = file.getOriginalFilename();
-        String username = UserContextHolder.getUsername();
+        User user = UserContextHolder.getUser();
+        String username = user.getUserName();
         String ossPath = "recognizeImage/" + username;
         String ossUrl;
         try {
@@ -77,6 +85,7 @@ public class HexagramService {
         AiResult aiResult = llmServiceFactory.generateTextByImage(ConstantUtil.IMAGE_SYSTEM_PROMPT + AIDocJsonBuilder.generateJsonWithNotes(Prediction.class),
                 IMAGE_PROCESSING_PROMPT_WORDS2, ossUrl);
         log.info("AI图片分析结果：" + aiResult.getText());
+        paymentService.confirmPay(PaymentType.BALANCE_PAYMENT, AITaskType.IMAGE, user.getId(),aiResult);
         Prediction prediction = JsonUtils.fromJson(aiResult.getText(), Prediction.class);
         return calculateLiuYaoByImage(prediction);
     }

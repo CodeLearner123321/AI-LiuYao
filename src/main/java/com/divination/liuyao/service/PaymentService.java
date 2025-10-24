@@ -216,8 +216,6 @@ public class PaymentService {
      */
     public void confirmPay(PaymentType paymentType, AITaskType taskType, Long userId, AiResult aiResult) {
         BigDecimal price = amountCalculation(taskType, aiResult);
-
-
         if(PaymentType.BALANCE_PAYMENT == paymentType){
             userMapper.confirmDeduct(userId, TaskConstants.LIUYAO_PRICE, price);
         } else if (PaymentType.FREE_QUOTA_PAYMENT == paymentType){
@@ -229,12 +227,12 @@ public class PaymentService {
         //todo 后续支持配置
         BigDecimal inputPrice = new BigDecimal("0.003").divide(new BigDecimal(1000));
         BigDecimal outputPrice = new BigDecimal("0.009").divide(new BigDecimal(1000));
-        BigDecimal ImagePrice = new BigDecimal("0.009").divide(new BigDecimal(1000));
+        BigDecimal imagePrice = new BigDecimal("0.009").divide(new BigDecimal(1000));
         BigDecimal price = inputPrice.multiply(BigDecimal.valueOf(aiResult.getInputToken()))
                 .add(outputPrice.multiply(BigDecimal.valueOf(aiResult.getOutputToken())));
 
         if(AITaskType.IMAGE == taskType) {
-            price = price.add(ImagePrice.multiply(BigDecimal.valueOf(aiResult.getImageToken())));
+            price = price.add(imagePrice.multiply(BigDecimal.valueOf(aiResult.getImageToken())));
         }
         //收一毛钱用于维护项目
         return price.add(new  BigDecimal("0.1"));
