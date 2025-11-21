@@ -24,6 +24,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * 与金额相关的service
@@ -45,23 +46,15 @@ public class PaymentService {
      * @param userId 用户ID
      * @return 剩余额度（消费后）
      */
-    public Integer payTheFreeQuota(Long userId) {
+    public Boolean payTheFreeQuota(Long userId) {
         String redisKey = RedisUtil.USER_REQUEST_CREDIT_LIMIT + userId;
-
-        // 如果 Redis 中没有该 key
-        if (!redisUtil.hasKey(redisKey)) {
-            LocalDateTime now = LocalDateTime.now();
-            LocalDateTime endOfDay = LocalDateTime.of(now.getYear(), now.getMonth(), now.getDayOfMonth(), 23, 59);
-            long seconds = LocalDateTimeUtil.between(now, endOfDay).getSeconds();
-
-            int initQuota = Objects.equals(61L, userId) ? 4 : ConstantUtil.USER_FREE_QUOTA - 1;
-            redisUtil.set(redisKey, initQuota, seconds);
-            return initQuota;
-        } else {
-            // 执行自减操作
-            Long remaining = redisUtil.decr(redisKey, 1);
-            return remaining != null ? remaining.intValue() : null;
-        }
+        return redisUtil.limitLuaExecute(
+                redisKey,
+                String.valueOf(System.currentTimeMillis()),
+                String.valueOf(24 * 60 * 60 * 1000),
+                String.valueOf(2),
+                UUID.randomUUID().toString()
+        ) == 1L;
     }
 
     /**
@@ -69,17 +62,33 @@ public class PaymentService {
      * @param userId 用户ID
      * @return 回滚后的剩余额度
      */
-    public Integer rollbackFreeQuota(Long userId) {
+    public void rollbackFreeQuota(Long userId) {
+        String redisKey = RedisUtil.USER_REQUEST_CREDIT_LIMIT + userId;
+        //先删除窗口之外的数据
+        if(redisUtil.checkLimitLuaExecute(
+                redisKey,
+                String.valueOf(System.currentTimeMillis()),
+                String.valueOf(24 * 60 * 60 * 1000),
+                String.valueOf(2),
+                UUID.randomUUID().toString()
+        ) == 1L){
+            redisUtil.popMax(redisKey);
+        }
+    }
+
+    /**
+     * 校验是否有免费额度 true：有
+     */
+    public Boolean checkFreeQuota(Long userId) {
         String redisKey = RedisUtil.USER_REQUEST_CREDIT_LIMIT + userId;
 
-        // 如果 Redis 中没有该 key，说明不应该回滚
-        if (!redisUtil.hasKey(redisKey)) {
-            throw new BusinessException("无法回滚：该用户没有初始化免费额度");
-        }
-
-        // 执行自增操作
-        Long remaining = redisUtil.incr(redisKey, 1);
-        return remaining != null ? remaining.intValue() : null;
+        return redisUtil.checkLimitLuaExecute(
+                redisKey,
+                String.valueOf(System.currentTimeMillis()),
+                String.valueOf(24 * 60 * 60 * 1000),
+                String.valueOf(2),
+                UUID.randomUUID().toString()
+        ) == 1L;
     }
 
     /**
@@ -87,24 +96,6 @@ public class PaymentService {
      */
     public Boolean rollbackQuota(Long userId) {
         return userMapper.refund(userId, TaskConstants.LIUYAO_PRICE) == 1;
-    }
-
-
-    /**
-     * 校验是否有免费额度 true：有
-     */
-    public Boolean checkFreeQuota(Long userId) {
-        String redisKey = RedisUtil.USER_REQUEST_CREDIT_LIMIT + userId;
-        boolean isTrue = redisUtil.hasKey(redisKey);
-        if(isTrue){
-            return Integer.parseInt(redisUtil.get(redisKey) + "") <= 0;
-        } else {
-            LocalDateTime now = LocalDateTime.now();
-            LocalDateTime lastTime = LocalDateTime.of(now.getYear(), now.getMonth(), now.getDayOfMonth(), 23, 59);
-            long seconds = LocalDateTimeUtil.between(now, lastTime).getSeconds();
-            redisUtil.set(redisKey, Objects.equals(61L, UserContextHolder.getUserId()) ? 4 : ConstantUtil.USER_FREE_QUOTA, seconds);
-            return true;
-        }
     }
 
 
@@ -224,6 +215,7 @@ public class PaymentService {
     }
 
     public BigDecimal amountCalculation(AITaskType taskType, AiResult aiResult){
+        if(aiResult.getInputToken() == null){}
         //todo 后续支持配置
         BigDecimal inputPrice = new BigDecimal("0.003").divide(new BigDecimal(1000));
         BigDecimal outputPrice = new BigDecimal("0.009").divide(new BigDecimal(1000));
@@ -235,6 +227,6 @@ public class PaymentService {
             price = price.add(imagePrice.multiply(BigDecimal.valueOf(aiResult.getImageToken())));
         }
         //收一毛钱用于维护项目
-        return price.add(new  BigDecimal("0.1"));
+        return price.add(AITaskType.IMAGE == taskType ? new BigDecimal("0.02") : new  BigDecimal("0.1"));
     }
 }

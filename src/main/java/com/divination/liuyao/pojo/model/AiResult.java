@@ -26,6 +26,8 @@ public class AiResult {
 
     private Long imageToken;
 
+    private Boolean isTrue;
+
     // Getter and Setter methods
 
     public Boolean isFalse(){

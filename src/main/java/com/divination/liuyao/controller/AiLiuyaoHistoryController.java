@@ -3,6 +3,7 @@ package com.divination.liuyao.controller;
 import com.divination.liuyao.annotation.RateLimit;
 import com.divination.liuyao.exception.AuthenticationException;
 import com.divination.liuyao.pojo.dto.FeedbackRequest;
+import com.divination.liuyao.pojo.vo.AiLiuyaoHistoryAllVO;
 import com.divination.liuyao.pojo.vo.AiLiuyaoHistoryVO;
 import com.divination.liuyao.result.RespEntity;
 import com.divination.liuyao.service.AiLiuyaoHistoryService;
@@ -31,15 +32,14 @@ public class AiLiuyaoHistoryController {
      */
     @GetMapping
     @RateLimit(period = 60, timeUnit = TimeUnit.SECONDS, maxRequests = 10, message = "获取历史记录过于频繁，请稍后再试！")
-    public RespEntity<List<AiLiuyaoHistoryVO>> getHistory() {
+    public RespEntity<AiLiuyaoHistoryAllVO> getHistory() {
         // 验证用户是否登录
         Long userId = UserContextHolder.getUserId();
         if (userId == null) {
             throw new AuthenticationException("用户未登录", 401);
         }
 
-        List<AiLiuyaoHistoryVO> histories = historyService.getCurrentUserHistory();
-        return RespEntity.ok(histories);
+        return RespEntity.ok(historyService.getCurrentUserHistory());
     }
 
     /**

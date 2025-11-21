@@ -1,16 +1,21 @@
 package com.divination.liuyao.util;
 
 import cn.hutool.core.date.LocalDateTimeUtil;
+
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
+
+import org.springframework.data.redis.connection.RedisZSetCommands;
+import cn.hutool.core.io.resource.ClassPathResource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.connection.RedisConnection;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import javax.annotation.PostConstruct;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -23,7 +28,70 @@ public class RedisUtil {
     @Autowired
     private RedisTemplate<String, Object> redisTemplate;
 
+    @Autowired
+    private RedisTemplate<String, String> redisTemplateString;
+
     public static final String USER_REQUEST_CREDIT_LIMIT = "limit:user:request:credit";
+
+    private DefaultRedisScript<Long> slidingWindowScript;
+    private DefaultRedisScript<Long> checkSlidingWindowScript;
+
+
+    @PostConstruct
+    public void init() {
+        try {
+            // 1. 加载 Lua 脚本
+            ClassPathResource luaFile = new ClassPathResource("lua/rateLimit.lua");
+            slidingWindowScript = new DefaultRedisScript<>();
+            slidingWindowScript.setScriptText(
+                    new String(luaFile.getStream().readAllBytes(), StandardCharsets.UTF_8)
+            );
+            slidingWindowScript.setResultType(Long.class);
+
+            ClassPathResource checkLuaFile = new ClassPathResource("lua/checkRateLimit.lua");
+            checkSlidingWindowScript = new DefaultRedisScript<>();
+            checkSlidingWindowScript.setScriptText(
+                    new String(checkLuaFile.getStream().readAllBytes(), StandardCharsets.UTF_8)
+            );
+            checkSlidingWindowScript.setResultType(Long.class);
+
+        } catch (Exception e) {
+            throw new RuntimeException("无法加载 Lua 脚本: sliding_window.lua", e);
+        }
+    }
+
+
+    /**
+     * 执行时间窗口逻辑的lua脚本
+     -- KEYS[1]  限流 key (zset)
+     -- ARGV[1]  当前时间戳（毫秒）
+     -- ARGV[2]  窗口大小（毫秒）
+     -- ARGV[3]  最大请求数
+     -- ARGV[4]  当前请求的唯一 member（例如 UUID）
+     */
+    public Long limitLuaExecute(String key, Object... args){
+        return redisTemplateString.execute(
+                slidingWindowScript,
+                Collections.singletonList(key),
+                args
+        );
+    }
+
+    /**
+     * 执行时间窗口逻辑的lua脚本
+     -- KEYS[1]  限流 key (zset)
+     -- ARGV[1]  当前时间戳（毫秒）
+     -- ARGV[2]  窗口大小（毫秒）
+     -- ARGV[3]  最大请求数
+     -- ARGV[4]  当前请求的唯一 member（例如 UUID）
+     */
+    public Long checkLimitLuaExecute(String key, Object... args){
+        return redisTemplateString.execute(
+                checkSlidingWindowScript,
+                Collections.singletonList(key),
+                args
+        );
+    }
 
     /**
      * 指定缓存失效时间
@@ -590,11 +658,7 @@ public class RedisUtil {
      */
     public boolean setIfAbsent(String key, Object value, long time) {
         try {
-            Boolean result = redisTemplate.opsForValue().setIfAbsent(key, value);
-            if (Boolean.TRUE.equals(result) && time > 0) {
-                expire(key, time);
-            }
-            return result;
+            return redisTemplate.opsForValue().setIfAbsent(key, value, time, TimeUnit.SECONDS);
         } catch (Exception e) {
             log.error("Redis setIfAbsent with expire 操作异常", e);
             return false;
@@ -638,4 +702,19 @@ public class RedisUtil {
             return checkAndIncrement(key, 1);
         }
     }
+
+    /**
+     * 使用 Redis 原生命令 ZPOPMAX 删除 score 最大的一个元素
+     */
+    public Object popMax(String key) {
+        return redisTemplate.execute((RedisConnection connection) -> {
+            Set<RedisZSetCommands.Tuple> result = connection.zPopMax(key.getBytes(), 1);
+            if (result == null || result.isEmpty()) {
+                return null;
+            }
+            RedisZSetCommands.Tuple tuple = result.iterator().next();
+            return new String(tuple.getValue());
+        });
+    }
+
 } 

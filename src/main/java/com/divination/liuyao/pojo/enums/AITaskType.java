@@ -7,7 +7,7 @@ public enum AITaskType {
     IMAGE(1, "图像处理"),
     TEXT(2, "文本处理");
 
-    private final Integer code;
+    private final int code;
     private final String name;
 
     AITaskType(int code, String name) {

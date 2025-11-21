@@ -89,7 +89,7 @@ public class TaskService {
             // 创建任务记录
             task = new Task();
             Boolean isTrue = paymentService.checkFreeQuota(userId);
-            if (StringUtils.isBlank(defaultValueConfig.getApiKey())) {
+            if (StringUtils.isBlank(castDto.getApiKey())) {
                 int affected = paymentService.advancePayment(userId);
                 if (affected == 0 && !isTrue) {
                     return RespEntity.error(String.format("您的每日%s次免费额度已使用完，请联系管理员或明日在试吧~", ConstantUtil.USER_FREE_QUOTA));
@@ -144,7 +144,7 @@ public class TaskService {
                         TaskConstants.TASK_STATUS_FAILED,
                         "任务创建过程中发生异常: " + e.getMessage(),
                         BigDecimal.ZERO,
-                        TaskConstants.CHARGE_STATUS_NO
+                        TaskConstants.CHARGE_STATUS_NO, task.getPaymentType()
                 );
                 // 如果已经预扣费，执行退款操作
                 if (paymentType.equals(PaymentType.BALANCE_PAYMENT.getCode())) {

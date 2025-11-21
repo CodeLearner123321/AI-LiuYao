@@ -83,7 +83,6 @@
             balance = balance - #{balance},
             updated_at = NOW()
         WHERE id = #{userId}
-          AND frozen_balance > 0
     </update>
     
     <!-- 退款操作 -->

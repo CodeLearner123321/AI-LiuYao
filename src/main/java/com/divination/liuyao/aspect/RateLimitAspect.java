@@ -1,10 +1,14 @@
 package com.divination.liuyao.aspect;
 
+import cn.hutool.core.io.resource.ClassPathResource;
 import com.divination.liuyao.annotation.RateLimit;
 import com.divination.liuyao.exception.RateLimitException;
 import com.divination.liuyao.util.RedisUtil;
 import com.divination.liuyao.util.UserContextHolder;
 import java.lang.reflect.Method;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -14,11 +18,14 @@ import org.aspectj.lang.annotation.Pointcut;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.annotation.Order;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
+import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
 
 /**
@@ -34,9 +41,27 @@ public class RateLimitAspect {
     
     @Autowired
     private RedisUtil redisUtil;
+    private DefaultRedisScript<Long> slidingWindowScript;
+
 
     @Pointcut("@annotation(com.divination.liuyao.annotation.RateLimit)")
     public void rateLimit() {
+    }
+
+    @PostConstruct
+    public void init() {
+        try {
+            // 1. 加载 Lua 脚本
+            ClassPathResource luaFile = new ClassPathResource("lua/rateLimit.lua");
+            slidingWindowScript = new DefaultRedisScript<>();
+            slidingWindowScript.setScriptText(
+                    new String(luaFile.getStream().readAllBytes(), StandardCharsets.UTF_8)
+            );
+            slidingWindowScript.setResultType(Long.class);
+
+        } catch (Exception e) {
+            throw new RuntimeException("无法加载 Lua 脚本: sliding_window.lua", e);
+        }
     }
 
     @Around("rateLimit()")
@@ -50,51 +75,37 @@ public class RateLimitAspect {
         if (rateLimit == null) {
             return point.proceed();
         }
-
         // 获取当前用户ID
         Long userId = UserContextHolder.getUserId();
         if (userId == null) {
             // 如果没有登录，则尝试获取请求IP地址
             userId = getUserIpAsLong();
         }
-
         // 构建限流的key
         String limitKey = buildLimitKey(method, rateLimit, userId);
-
         // 获取限流参数
         int period = rateLimit.period();
         TimeUnit timeUnit = rateLimit.timeUnit();
         int maxRequests = rateLimit.maxRequests();
+        // 转换为毫秒
+        long seconds = timeUnit.toSeconds(period) * 1000;
 
-        // 转换为秒
-        long seconds = timeUnit.toSeconds(period);
-
-        // 获取当前计数
-        Object countObj = redisUtil.get(limitKey);
-        int count = 0;
-        if (countObj != null) {
-            count = Integer.parseInt(countObj.toString());
-        }
-
-        // 判断是否超出限制
-        if (count >= maxRequests) {
+        Long result = redisUtil.limitLuaExecute(
+                limitKey,
+                String.valueOf(System.currentTimeMillis()),
+                String.valueOf(seconds),
+                String.valueOf(maxRequests),
+                userId + "_" + UUID.randomUUID().toString()
+                );
+        if (result != 1L) {
             log.warn("用户[{}]访问[{}]超出限制，限制为{}次/{}秒", userId, method.getName(), maxRequests, seconds);
             throw new RateLimitException(rateLimit.message());
-        }
-
-        // 正常访问，计数器+1
-        if (count == 0) {
-            // 第一次访问，设置过期时间
-            redisUtil.set(limitKey, "1", (int) seconds);
-        } else {
-            // 非第一次访问，计数器+1
-            redisUtil.incr(limitKey, 1);
         }
 
         // 执行原方法
         return point.proceed();
     }
-    
+
     /**
      * 构建限流key
      */

@@ -22,6 +22,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -68,8 +69,8 @@ public class AiAnalysisService {
      * 异步执行AI分析任务
      * @param task 任务对象
      */
-    @Async
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+//    @Async
+//    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void executeAiAnalysis(Task task) {
         String lockKey = TaskConstants.TASK_LOCK_PREFIX + task.getUserId() + ":" + TaskConstants.TASK_TYPE_LIUYAO;
 
@@ -84,27 +85,32 @@ public class AiAnalysisService {
             // 使用ObjectMapper将分析结果转换为JSON
             String resultJson = objectMapper.writeValueAsString(analysis);
             //给用户实际扣款
-            if(analysis.isFalse()){
-                paymentService.rollbackQuota(task.getUserId());
-            }else {
+            if(Objects.equals(PaymentType.BALANCE_PAYMENT.getCode(),task.getPaymentType())){
                 paymentService.confirmPay(PaymentType.fromCode(task.getPaymentType()),
                         AITaskType.fromCode(AITaskType.TEXT.getCode()),
                         task.getUserId(),
                         analysis);
+                task.setActualAmount(paymentService.amountCalculation(AITaskType.fromCode(AITaskType.TEXT.getCode()),
+                        analysis));
+            } else if(Objects.equals(PaymentType.FREE_QUOTA_PAYMENT.getCode(),task.getPaymentType())){
+                task.setActualAmount(BigDecimal.ONE);
+            } else {
+                task.setActualAmount(BigDecimal.ZERO);
             }
-
             task.setActualAmount(paymentService.amountCalculation(AITaskType.fromCode(AITaskType.TEXT.getCode()),
                     analysis));
-            task.setIsCharged(TaskConstants.CHARGE_STATUS_YES);
+            task.setIsCharged(analysis.isFalse() ? TaskConstants.CHARGE_STATUS_NO : TaskConstants.CHARGE_STATUS_YES);
+
 
             // 使用新的updateTaskComplete方法一次性更新所有字段
             taskMapper.updateTaskComplete(
                 task.getId(),
                 resultJson,
-                TaskConstants.TASK_STATUS_COMPLETED,
-                null,
+                analysis.getIsTrue() ? TaskConstants.TASK_STATUS_COMPLETED : TaskConstants.TASK_STATUS_FAILED,
+                analysis.getIsTrue() ? null : analysis.getText(),
                 task.getActualAmount(),
-                TaskConstants.CHARGE_STATUS_YES
+                task.getIsCharged(),
+                    task.getPaymentType()
             );
 
             // 保存历史记录
@@ -125,7 +131,7 @@ public class AiAnalysisService {
                     TaskConstants.TASK_STATUS_FAILED,
                     msg,
                     BigDecimal.ZERO,
-                    TaskConstants.CHARGE_STATUS_NO
+                    TaskConstants.CHARGE_STATUS_NO, task.getPaymentType()
                 );
 
                 // 如果失败，恢复用户余额

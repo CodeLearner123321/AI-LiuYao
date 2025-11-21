@@ -81,6 +81,7 @@ public interface TaskMapper extends BaseMapper<Task> {
         @Param("status") String status, 
         @Param("errorMsg") String errorMsg,
         @Param("actualAmount") BigDecimal actualAmount,
-        @Param("isCharged") Integer isCharged
+        @Param("isCharged") Integer isCharged,
+        @Param("paymentType") Integer paymentType
     );
 } 

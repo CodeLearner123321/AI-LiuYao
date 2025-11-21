@@ -81,6 +81,7 @@
             error_msg = #{errorMsg},
             actual_amount = #{actualAmount},
             is_charged = #{isCharged},
+            payment_type = #{paymentType},
             updated_at = NOW(),
             completed_at = CASE WHEN #{status} IN ('COMPLETED', 'FAILED') THEN NOW() ELSE completed_at END
         WHERE id = #{taskId}

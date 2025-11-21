@@ -1,11 +1,14 @@
 package com.divination.liuyao.pojo.enums;
 
+import lombok.Getter;
+
 /**
  * 支付类型枚举
  * 0：免费额度支付
  * 1：余额支付
  * 2：用户自定义API支付
  */
+@Getter
 public enum PaymentType {
 
     FREE_QUOTA_PAYMENT(0, "免费额度支付"),
@@ -18,14 +21,6 @@ public enum PaymentType {
     PaymentType(int code, String description) {
         this.code = code;
         this.description = description;
-    }
-
-    public int getCode() {
-        return code;
-    }
-
-    public String getDescription() {
-        return description;
     }
 
     /**

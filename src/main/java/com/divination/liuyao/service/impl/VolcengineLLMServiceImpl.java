@@ -61,6 +61,7 @@ public class VolcengineLLMServiceImpl implements LLMService {
     @Override
     public AiResult generateText(String systemPrompt, String userPrompt, ModelType modelType, String apiKey) {
         String contents = "";
+        AiResult aiResult = new AiResult();
         try {
             // 创建ArkService实例
             ArkService arkService = ArkService.builder().apiKey(apiKey == null ? this.apiKey : apiKey)
@@ -82,14 +83,14 @@ public class VolcengineLLMServiceImpl implements LLMService {
             contents = choices.stream()
                     .map(choice -> choice.getMessage().stringContent())
                     .collect(Collectors.joining("\n"));
-            AiResult aiResult = AIUtil.conductAIResults(contents);
+            aiResult = AIUtil.conductAIResults(contents);
             aiResult.setInputToken(chatCompletion.getUsage().getPromptTokens());
             aiResult.setOutputToken(chatCompletion.getUsage().getCompletionTokens());
         } finally {
             arkService.shutdownExecutor();
         }
 
-        return AIUtil.conductAIResults(contents);
+        return aiResult;
     }
 
     @Override
