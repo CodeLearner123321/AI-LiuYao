@@ -10,7 +10,7 @@
         <result property="taskId" column="task_id"/>
         <result property="question" column="question"/>
         <result property="background" column="background"/>
-        <result property="castType" column="cast_type"/>
+        <result column="cast_type" property="castType"/>
         <result property="timestamp" column="timestamp"/>
         <result property="number" column="number"/>
         <result property="castTime" column="cast_time"/>
@@ -44,7 +44,7 @@
     
     <!-- 根据用户ID查询历史记录列表（简化版，只返回基本信息） -->
     <select id="findQuestionListByUserId" resultMap="historyResultMap">
-        SELECT id, question, key_outcome, duration_seconds, amount, is_accurate
+        SELECT id, question, key_outcome, duration_seconds, amount, is_accurate, cast_type
         FROM ai_liuyao_history
         WHERE user_id = #{userId}
         ORDER BY create_time DESC

@@ -15,7 +15,7 @@ import java.util.List;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class AiLiuyaoHistoryAllVO extends BaGuaVo{
+public class AiLiuyaoHistoryAllVO {
 
     private List<AiLiuyaoHistoryVO>  aiLiuyaoHistoryVOS;
 

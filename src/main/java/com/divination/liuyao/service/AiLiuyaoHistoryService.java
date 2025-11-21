@@ -47,7 +47,6 @@ public class AiLiuyaoHistoryService {
         AiLiuyaoHistoryAllVO aiLiuyaoHistoryAllVO = new AiLiuyaoHistoryAllVO();
         List<AiLiuyaoHistoryVO> aiLiuyaoHistoryVOS = getUserHistory(userId);
         aiLiuyaoHistoryAllVO.setAiLiuyaoHistoryVOS(aiLiuyaoHistoryVOS);
-
         List<AiLiuyaoHistoryVO> validList = aiLiuyaoHistoryVOS.stream()
                 .filter(vo -> vo.getIsAccurate() != null)
                 .collect(Collectors.toList());
