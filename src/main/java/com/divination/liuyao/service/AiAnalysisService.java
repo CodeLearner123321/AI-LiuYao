@@ -33,7 +33,6 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
-import static com.divination.liuyao.util.ConstantUtil.IMAGE_PROCESSING_PROMPT_WORDS2;
 
 @Slf4j
 @Service

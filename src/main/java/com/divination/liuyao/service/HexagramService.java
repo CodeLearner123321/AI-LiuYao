@@ -14,6 +14,7 @@ import com.divination.liuyao.pojo.model.AiResult;
 import com.divination.liuyao.pojo.model.BaGua;
 import com.divination.liuyao.pojo.model.Hexagram;
 import com.divination.liuyao.pojo.vo.BaGuaVo;
+import com.divination.liuyao.pojo.vo.RecognizeImageVo;
 import com.divination.liuyao.service.factory.LLMServiceFactory;
 import com.divination.liuyao.util.*;
 import lombok.extern.slf4j.Slf4j;
@@ -23,10 +24,13 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
 
-import static com.divination.liuyao.util.ConstantUtil.IMAGE_PROCESSING_PROMPT_WORDS2;
 
 @Slf4j
 @Service
@@ -67,9 +71,9 @@ public class HexagramService {
      * 上传图片，识别文字
      */
     @Transactional(rollbackFor = Exception.class)
-    public Hexagram recognizeTextByImage(@RequestParam("file") MultipartFile file) {
+    public RecognizeImageVo recognizeTextByImage(@RequestParam("file") MultipartFile file) {
         if(file.isEmpty()) {
-            return new Hexagram();
+            return new RecognizeImageVo();
         }
         String fileName = file.getOriginalFilename();
         User user = UserContextHolder.getUser();
@@ -80,14 +84,27 @@ public class HexagramService {
             ossUrl = OSSUtil.uploadFile(ossPath, fileName, file.getInputStream());
         } catch (Exception e) {
             log.error("文件上传OSS失败", e);
-            return null;
+            return new RecognizeImageVo();
         }
-        AiResult aiResult = llmServiceFactory.generateTextByImage(ConstantUtil.IMAGE_SYSTEM_PROMPT + AIDocJsonBuilder.generateJsonWithNotes(Prediction.class),
-                IMAGE_PROCESSING_PROMPT_WORDS2, ossUrl);
+
+        String jsonTemplate = AIDocJsonBuilder.generateJsonWithNotes(Prediction.class);
+        Map<String, Object> data = new HashMap<>();
+        data.put("guaList", ConstantUtil.GUA_LIST);
+        data.put("jsonTemplate", jsonTemplate);
+        String finalPrompt = FreemarkerUtil.render("prediction_prompt.ftl", data);
+
+
+        RecognizeImageVo recognizeImageVo = new RecognizeImageVo();
+        AiResult aiResult = llmServiceFactory.generateTextByImage(ConstantUtil.IMAGE_SYSTEM_PROMPT ,
+                finalPrompt, ossUrl);
         log.info("AI图片分析结果：" + aiResult.getText());
-        paymentService.confirmPay(PaymentType.BALANCE_PAYMENT, AITaskType.IMAGE, user.getId(),aiResult);
+        BigDecimal price = paymentService.confirmPay(PaymentType.BALANCE_PAYMENT, AITaskType.IMAGE, user.getId(), aiResult);
         Prediction prediction = JsonUtils.fromJson(aiResult.getText(), Prediction.class);
-        return calculateLiuYaoByImage(prediction);
+        Hexagram hexagram = calculateLiuYaoByImage(prediction);
+        recognizeImageVo.setHexagram(hexagram);
+        recognizeImageVo.setPrice(price.setScale(2, RoundingMode.HALF_UP));
+
+        return recognizeImageVo;
     }
 
     public Hexagram castHexagram(CastDto castDto) {

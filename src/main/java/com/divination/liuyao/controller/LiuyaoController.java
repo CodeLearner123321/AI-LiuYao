@@ -11,6 +11,7 @@ import com.divination.liuyao.pojo.enums.UserRoleType;
 import com.divination.liuyao.pojo.enums.ViewPermission;
 import com.divination.liuyao.pojo.model.Hexagram;
 import com.divination.liuyao.pojo.vo.BaGuaVo;
+import com.divination.liuyao.pojo.vo.RecognizeImageVo;
 import com.divination.liuyao.pojo.vo.TaskQueryVO;
 import com.divination.liuyao.result.RespEntity;
 import com.divination.liuyao.service.HexagramService;
@@ -130,7 +131,7 @@ public class LiuyaoController {
      * 上传图片，识别文字
      */
     @PostMapping("/recognize")
-    public RespEntity<Hexagram> recognizeText(@RequestParam("file") MultipartFile file) {
+    public RespEntity<RecognizeImageVo> recognizeText(@RequestParam("file") MultipartFile file) {
         try {
             return RespEntity.ok(hexagramService.recognizeTextByImage(file));
         } catch (Exception e) {

@@ -205,13 +205,14 @@ public class PaymentService {
      * @param userId        用户id
      * @param aiResult      AI使用token
      */
-    public void confirmPay(PaymentType paymentType, AITaskType taskType, Long userId, AiResult aiResult) {
+    public BigDecimal confirmPay(PaymentType paymentType, AITaskType taskType, Long userId, AiResult aiResult) {
         BigDecimal price = amountCalculation(taskType, aiResult);
         if(PaymentType.BALANCE_PAYMENT == paymentType){
             userMapper.confirmDeduct(userId, TaskConstants.LIUYAO_PRICE, price);
         } else if (PaymentType.FREE_QUOTA_PAYMENT == paymentType){
             //免费额度没有预支付
         }
+        return price;
     }
 
     public BigDecimal amountCalculation(AITaskType taskType, AiResult aiResult){
