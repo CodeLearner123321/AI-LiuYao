@@ -38,5 +38,19 @@
         </foreach>
     </insert>
     
+    <!-- 根据状态和金额查询卡密列表 -->
+    <select id="queryCardKeys" resultMap="cardKeyResultMap">
+        SELECT * FROM card_key
+        <where>
+            <if test="status != null">
+                AND status = #{status}
+            </if>
+            <if test="amount != null">
+                AND amount = #{amount}
+            </if>
+        </where>
+        ORDER BY create_time DESC
+    </select>
+    
 </mapper>
 

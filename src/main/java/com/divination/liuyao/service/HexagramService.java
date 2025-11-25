@@ -31,6 +31,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
 
+import static com.divination.liuyao.pojo.model.Hexagram.createShenSha;
+
 
 @Slf4j
 @Service
@@ -158,7 +160,18 @@ public class HexagramService {
         hexagram.setOriginalBaGua(baGuaVo.getOriginalBaGua());
         hexagram.setChangedBaGua(baGuaVo.getChangedBaGua());
         hexagram.setExistChanged(baGuaVo.getExistChanged());
-        hexagram.setShenSha(null);
+        if (baZi.getYearDiZhi() != null
+                && baZi.getMonthDiZhi() != null
+                && baZi.getDayDiZhi() != null
+                && baZi.getDayTianGan() != null) {
+            hexagram.setShenSha(createShenSha(
+                    baZi.getYearDiZhi(),
+                    baZi.getMonthDiZhi(),
+                    baZi.getDayDiZhi(),
+                    baZi.getDayTianGan()));
+        } else {
+            hexagram.setShenSha(null);
+        }
         hexagram.setBaZi(baZi);
         hexagram.setQuestionDescription(prediction.getDescription() == null ? null : prediction.getDescription().getQuestion());
         hexagram.setQuestionBackground(prediction.getDescription() == null ? null : prediction.getDescription().getBackground());

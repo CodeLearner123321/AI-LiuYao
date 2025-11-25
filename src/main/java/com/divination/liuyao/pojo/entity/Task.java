@@ -41,7 +41,7 @@ public class Task {
     private String status;
     
     /**
-     * 预扣费金额
+     * 预扣费金额(废弃了)
      */
     private BigDecimal preAmount;
     

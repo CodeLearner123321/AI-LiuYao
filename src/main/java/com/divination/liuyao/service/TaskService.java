@@ -207,6 +207,8 @@ public class TaskService {
         if (TaskConstants.TASK_STATUS_COMPLETED.equals(task.getStatus())) {
             result.setCompleted(true);
             result.setData(objectMapper.readTree(task.getResultData()));
+            result.setPaymentType(task.getPaymentType());
+            result.setPrice(task.getActualAmount());
         } else if (TaskConstants.TASK_STATUS_FAILED.equals(task.getStatus())) {
             // 任务失败
             result.setCompleted(true);

@@ -40,5 +40,14 @@ public interface CardKeyMapper extends BaseMapper<CardKey> {
      * @return 插入的行数
      */
     int batchInsert(@Param("list") List<CardKey> cardKeyList);
+    
+    /**
+     * 根据状态和金额查询卡密列表
+     * 
+     * @param status 卡密状态（可选）
+     * @param amount 卡密金额（可选）
+     * @return 卡密列表
+     */
+    List<CardKey> queryCardKeys(@Param("status") Integer status, @Param("amount") java.math.BigDecimal amount);
 }
 

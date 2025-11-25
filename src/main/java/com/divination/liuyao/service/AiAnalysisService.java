@@ -68,8 +68,8 @@ public class AiAnalysisService {
      * 异步执行AI分析任务
      * @param task 任务对象
      */
-//    @Async
-//    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Async
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void executeAiAnalysis(Task task) {
         String lockKey = TaskConstants.TASK_LOCK_PREFIX + task.getUserId() + ":" + TaskConstants.TASK_TYPE_LIUYAO;
 
@@ -96,8 +96,6 @@ public class AiAnalysisService {
             } else {
                 task.setActualAmount(BigDecimal.ZERO);
             }
-            task.setActualAmount(paymentService.amountCalculation(AITaskType.fromCode(AITaskType.TEXT.getCode()),
-                    analysis));
             task.setIsCharged(analysis.isFalse() ? TaskConstants.CHARGE_STATUS_NO : TaskConstants.CHARGE_STATUS_YES);
 
 

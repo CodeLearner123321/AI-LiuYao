@@ -122,6 +122,44 @@ public class CardKeyService {
     }
     
     /**
+     * 根据状态和金额查询卡密列表
+     * 只有userId=2或userId=1的用户才能查询
+     * 
+     * @param status 卡密状态（可选）
+     * @param amount 卡密金额（可选）
+     * @return 卡密列表
+     */
+    public List<CardKeyVO> queryCardKeys(Integer status, BigDecimal amount) {
+        // 获取当前用户ID
+        Long userId = UserContextHolder.getUserId();
+        if (userId == null) {
+            throw new AuthenticationException("用户未登录", 401);
+        }
+        
+        // 验证权限：只有userId=2或userId=1的用户才能查询卡密
+        if (!userId.equals(2L) && !userId.equals(1L)) {
+            throw new AuthenticationException("无权限查询卡密", 403);
+        }
+        
+        // 查询卡密列表
+        List<CardKey> cardKeyList = cardKeyMapper.queryCardKeys(status, amount);
+        
+        // 转换为VO对象
+        List<CardKeyVO> cardKeyVOList = new ArrayList<>();
+        for (CardKey cardKey : cardKeyList) {
+            CardKeyVO vo = new CardKeyVO();
+            vo.setCardCode(cardKey.getCardCode());
+            vo.setAmount(cardKey.getAmount());
+            vo.setStatus(cardKey.getStatus());
+            vo.setCreateTime(cardKey.getCreateTime());
+            vo.setUseTime(cardKey.getUseTime());
+            cardKeyVOList.add(vo);
+        }
+        
+        return cardKeyVOList;
+    }
+    
+    /**
      * 生成卡密码
      * 使用UUID生成唯一的卡密码，去除横杠并转大写
      * 

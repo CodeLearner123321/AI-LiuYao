@@ -169,7 +169,7 @@ public class Hexagram extends BaGuaVo{
         /**
          * 构造神煞
          */
-    private static List<String> createShenSha(DiZhi yearDiZhi,DiZhi monthDiZhi, DiZhi dayDiZhi, TianGan dayTianGan) {
+    public static List<String> createShenSha(DiZhi yearDiZhi,DiZhi monthDiZhi, DiZhi dayDiZhi, TianGan dayTianGan) {
         List<String> str = new ArrayList<>();
         str.add(ConstantUtil.YI_MA + "-" + dayDiZhi.getYiMa());
         str.add(ConstantUtil.JIAN_XING + "-" + dayDiZhi.getJiangXin());

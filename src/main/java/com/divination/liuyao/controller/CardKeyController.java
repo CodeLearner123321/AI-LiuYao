@@ -2,6 +2,7 @@ package com.divination.liuyao.controller;
 
 import com.divination.liuyao.annotation.RateLimit;
 import com.divination.liuyao.pojo.dto.GenerateCardKeyRequest;
+import com.divination.liuyao.pojo.dto.QueryCardKeyRequest;
 import com.divination.liuyao.pojo.dto.UseCardKeyRequest;
 import com.divination.liuyao.pojo.vo.CardKeyVO;
 import com.divination.liuyao.result.RespEntity;
@@ -59,6 +60,20 @@ public class CardKeyController {
         result.put("message", "卡密使用成功，余额已增加");
         
         return RespEntity.ok(result);
+    }
+    
+    /**
+     * 查询卡密列表
+     * 只有userId=2或userId=1的用户才能访问
+     * 
+     * @param request 查询卡密请求，包含状态和金额（可选）
+     * @return 卡密列表
+     */
+    @PostMapping("/query")
+    @RateLimit(period = 60, timeUnit = TimeUnit.SECONDS, maxRequests = 30, message = "查询卡密过于频繁，请稍后再试！")
+    public RespEntity<List<CardKeyVO>> queryCardKeys(@RequestBody QueryCardKeyRequest request) {
+        List<CardKeyVO> cardKeys = cardKeyService.queryCardKeys(request.getStatus(), request.getAmount());
+        return RespEntity.ok(cardKeys);
     }
 }
 
