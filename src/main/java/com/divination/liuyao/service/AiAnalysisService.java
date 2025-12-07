@@ -68,7 +68,7 @@ public class AiAnalysisService {
     @Async
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void executeAiAnalysis(Task task) {
-        String lockKey = TaskConstants.TASK_LOCK_PREFIX + task.getUserId() + ":" + TaskConstants.TASK_TYPE_LIUYAO;
+        String aiLockKey = TaskConstants.TASK_LOCK_PREFIX_AI_PREDICTION + ":" + task.getUserId() + ":" + TaskConstants.TASK_TYPE_LIUYAO;
 
         try {
             long start = System.currentTimeMillis();
@@ -137,7 +137,7 @@ public class AiAnalysisService {
         } finally {
             // 无论成功还是失败，都删除Redis锁
             try {
-                redisUtil.del(lockKey);
+                redisUtil.del(aiLockKey);
             } catch (Exception e) {
                 log.error("删除Redis锁失败: {}", e.getMessage(), e);
             }

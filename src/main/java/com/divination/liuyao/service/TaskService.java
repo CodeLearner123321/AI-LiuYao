@@ -76,6 +76,9 @@ public class TaskService {
         String lockKey = TaskConstants.TASK_LOCK_PREFIX + userId + ":" + TaskConstants.TASK_TYPE_LIUYAO;
         Boolean lockSet = redisUtil.setIfAbsent(lockKey, "1", TaskConstants.TASK_LOCK_EXPIRE_TIME);
 
+        String aiLockKey = TaskConstants.TASK_LOCK_PREFIX_AI_PREDICTION + ":" + userId + ":" + TaskConstants.TASK_TYPE_LIUYAO;
+        redisUtil.setIfAbsent(aiLockKey, "1", TaskConstants.TASK_LOCK_EXPIRE_TIME);
+
         if (Boolean.FALSE.equals(lockSet)) {
             log.warn("用户 {} 已有进行中的六爻任务", userId);
             return RespEntity.error("您有一个正在进行的六爻分析任务，请等待完成后再试");
@@ -182,8 +185,8 @@ public class TaskService {
         result.setTaskId(taskId);
         
         // 检查Redis中是否有任务锁，有锁说明任务正在处理中
-        String lockKey = TaskConstants.TASK_LOCK_PREFIX + userId + ":" + taskType;
-        if (redisUtil.hasKey(lockKey)) {
+        String aiLockKey = TaskConstants.TASK_LOCK_PREFIX_AI_PREDICTION + ":" + userId + ":" + taskType;
+        if (redisUtil.hasKey(aiLockKey)) {
             // 任务正在处理中
             result.setStatus(TaskConstants.TASK_STATUS_PROCESSING);
             result.setCompleted(false);

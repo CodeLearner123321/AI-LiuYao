@@ -27,6 +27,9 @@ public class TaskConstants {
     
     // Redis中任务锁的前缀
     public static final String TASK_LOCK_PREFIX = "TASK:LOCK:";
+
+    // Redis中任务锁的前缀： ai预测
+    public static final String TASK_LOCK_PREFIX_AI_PREDICTION = "TASK:LOCK:AI:PREDICTION";
     
     // Redis中任务锁的过期时间（100秒）
     public static final int TASK_LOCK_EXPIRE_TIME = 100;

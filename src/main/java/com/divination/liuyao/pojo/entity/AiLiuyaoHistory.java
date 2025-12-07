@@ -73,6 +73,7 @@ public class AiLiuyaoHistory {
 
     /**
      * 自定义时间
+     * todo 这个字段我不知道是否可以省略掉，应该不可以。对于图片起卦这种类型，也许会用到
      */
     private String customTime;
 

@@ -77,7 +77,7 @@ public class AuthService {
             }
             user.setUserName(registerRequest.getUserName());
             //默认送100万的额度
-            user.setBalance(new BigDecimal(1000000.00));
+            user.setBalance(new BigDecimal(5));
 
             // 生成盐值并哈希密码
             String salt = passwordUtil.generateSalt();
