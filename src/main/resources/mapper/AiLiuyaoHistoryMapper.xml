@@ -26,11 +26,11 @@
     <insert id="insert" parameterType="com.divination.liuyao.pojo.entity.AiLiuyaoHistory" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO ai_liuyao_history (
             history_id, user_id, task_id, question, background, cast_type,
-            timestamp, number, cast_time, key_outcome, result_data,
+            timestamp, number, cast_time,custom_time, key_outcome, result_data,
             create_time, amount
         ) VALUES (
             #{historyId}, #{userId}, #{taskId}, #{question}, #{background}, #{castType},
-            #{timestamp}, #{number}, #{castTime}, #{keyOutcome}, #{resultData},
+            #{timestamp}, #{number}, #{castTime}, #{customTime}, #{keyOutcome}, #{resultData},
             #{createTime}, #{amount}
         )
     </insert>

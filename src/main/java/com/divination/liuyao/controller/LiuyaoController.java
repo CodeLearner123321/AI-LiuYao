@@ -89,6 +89,9 @@ public class LiuyaoController {
         } else {
             log.debug("使用指定的LLM服务类型: {}", castDto.getLlmServiceType());
         }
+//        Map<String, Object> response = new HashMap<>();
+//        response.put("taskId", 120);
+//        return RespEntity.ok(response);
         
         return taskService.createLiuyaoTask(castDto);
     }

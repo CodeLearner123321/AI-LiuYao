@@ -20,10 +20,7 @@ import com.divination.liuyao.util.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -92,6 +89,7 @@ public class AiAnalysisService {
                 task.setActualAmount(paymentService.amountCalculation(AITaskType.fromCode(AITaskType.TEXT.getCode()),
                         analysis));
             } else if(Objects.equals(PaymentType.FREE_QUOTA_PAYMENT.getCode(),task.getPaymentType())){
+                //免费消费一次
                 task.setActualAmount(BigDecimal.ONE);
             } else {
                 task.setActualAmount(BigDecimal.ZERO);
@@ -171,7 +169,8 @@ public class AiAnalysisService {
             history.setTimestamp(castDto.getTimestamp());
             history.setNumber(castDto.getNumber());
             history.setCastTime(castDto.getCastTime());
-            
+            history.setCustomTime(castDto.getCustomTime());
+
             // 设置结果
             history.setKeyOutcome(aiResult.getKeyOutcome());
             history.setResultData(objectMapper.writeValueAsString(aiResult.getText()));
@@ -200,54 +199,59 @@ public class AiAnalysisService {
         String background = castDto.getBackground();
 
         try {
-            // 系统提示
-            String systemPrompt = "你是一位精通易经六爻预测的大师，熟读《增删卜易》、《古筮真诠》、《卜筮正宗》、《卜筮全书》、《黄金策》、《易冒》、《断易天机》、《火株林》、《京氏易传》《洞林秘诀》、《易林补遗》、《易隐》、《易冒》、《十翼》\n";
-            // 构建用户提示
-            StringBuilder prompt = new StringBuilder();
-            prompt.append("请分析以下六爻卦：\n");
-            if (question != null && !question.isEmpty()) {
-                prompt.append("问题：" + question + "\n");
-            }
-            if (background != null && !background.isEmpty()) {
-                prompt.append("背景：" + background + "\n");
-            }
-            //时间
+            // 使用模板生成系统提示
+            String systemPrompt = FreemarkerUtil.render("liuyao_system_prompt.ftl", new HashMap<>());
+            
+            // 准备模板参数
+            Map<String, Object> templateParams = new HashMap<>();
+            
+            // 设置问题和背景
+            templateParams.put("question", question);
+            templateParams.put("background", background);
+            
+            // 处理时间信息
+            String timeString = null;
             if(hexagram.getCustomTime() != null && !hexagram.getCustomTime().isEmpty()){
-                prompt.append("时间： " + hexagram.getCustomTime() + "\n");
+                timeString = hexagram.getCustomTime();
             } else if(hexagram.getLocalDateTime() == null && hexagram.getBaZi() != null){
-                prompt.append("时间： " + hexagram.getBaZi().toString() + "\n");
+                timeString = hexagram.getBaZi().toString();
             } else if(hexagram.getLocalDateTime() != null){
-                prompt.append("时间： " + BaZiUtil.getAllByLocalDateTime(hexagram.getLocalDateTime()) + "\n");
+                timeString = BaZiUtil.getAllByLocalDateTime(hexagram.getLocalDateTime());
             }
-            //卦名
-            prompt.append(hexagram.getGuaStringByPosition(hexagram.isExistChanged()) + "\n");
-            //神煞
+            templateParams.put("timeString", timeString);
+            
+            // 设置卦名
+            templateParams.put("guaString", hexagram.getGuaStringByPosition(hexagram.isExistChanged()));
+            
+            // 设置神煞
             if(hexagram.getShenSha() != null && !hexagram.getShenSha().isEmpty()){
-                prompt.append(hexagram.getShenShaString() + "\n");
+                templateParams.put("shenShaString", hexagram.getShenShaString());
             }
-            //从上爻到初爻
+            
+            // 设置六爻信息（从上爻到初爻）
+            List<String> yaoStrings = new ArrayList<>();
             for (int i = 5; i >= 0; i--) {
-                prompt.append(hexagram.getYaoStringByPosition(i, hexagram.isExistChanged()) + "\n");
+                yaoStrings.add(hexagram.getYaoStringByPosition(i, hexagram.isExistChanged()));
             }
-            prompt.append("请你按照如下的分析思路去分析：\n");
-            prompt.append("1.取用神（可能有一个或多个）\n");
-            prompt.append("2.根据六亲旺衰、动爻与用神的关系、动变关系、以理法的角度分析事情的吉凶\n");
-            prompt.append("3.根据六神、神煞、爻位、神煞结合已经分析的理法用象法的角度分析事情的具体过程\n");
-            prompt.append("4.根据理法和象法两个角度，给出事情的定论。\n");
-            prompt.append("请你依次按照：1、用神 2、理法  3、象法  4、吉凶定论 5、判辞 这五个标题的格式回复我（判辞就是总结吉凶判断的一句小诗，这句小诗要求通俗易懂，字数不超过12个字）\n");
-            prompt.append("请你严格参照上述要求分析，要求分析时以专业的角度分析，给出答案要通俗易懂\n");
-            prompt.append("如果我提交的问题和背景，有误，请直接返回" + ConstantUtil.AI_ERROR_RESULT_CODE + "\n");
+            templateParams.put("yaoStrings", yaoStrings);
+            
+            // 设置错误代码
+            templateParams.put("errorCode", ConstantUtil.AI_ERROR_RESULT_CODE);
+            
+            // 使用模板生成用户提示
+            String prompt = FreemarkerUtil.render("liuyao_analysis_prompt.ftl", templateParams);
 
             log.debug("准备发送AI请求，提示词长度: {}", prompt.length());
-            log.debug("提示词为：\n" + prompt.toString());
+            log.debug("提示词为：\n{}", prompt);
 
             // 记录开始时间
             long startTime = System.currentTimeMillis();
-            // 调用LLMService获取回复
-            AiResult response = llmServiceFactory.generateText(systemPrompt, prompt.toString(), castDto);
+//             调用LLMService获取回复
+            AiResult response = llmServiceFactory.generateText(systemPrompt, prompt, castDto);
 
             // 计算响应时间（毫秒）转换为秒，保留2位小数
             log.debug("AI响应成功，响应时间{}", String.format("%.2f", (System.currentTimeMillis() - startTime) / 1000.0));
+//            return new AiResult();
             return response;
         } catch (Exception e) {
             log.error("AI分析过程中发生错误: ", e);

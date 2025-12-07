@@ -131,6 +131,54 @@ public class Hexagram extends BaGuaVo{
 
 
     /**
+     * 0-少阴，1-少阳，2-老阴，3-老阳
+     * 0:阴 1：阳
+     */
+    public static BaGuaVo createBaGuaVoByNumber2(BaGuaDto baGuaDto) {
+        Boolean isChange = false;
+        StringBuilder originNumber = new StringBuilder();
+        StringBuilder changeNumber = new StringBuilder();
+        byte[] isChangeMap = new byte[]{0,0,0,0,0,0};
+        String number = baGuaDto.getNumber();
+
+        for (int i = 0; i < number.length(); i++) {
+            char c = number.charAt(i);
+            if(c == '2' || c == '3'){
+                isChange = true;
+                changeNumber.append(c == '2' ? '1' : '0');
+                isChangeMap[i] = 1;
+            } else {
+                changeNumber.append(c);
+            }
+            originNumber.append(c == '0' || c == '2' ? '0' : '1');
+        }
+
+        BaGuaVo baGuaVo = new BaGuaVo();
+        BaGua originBaGua = BaGua.createBaGua(isChangeMap, originNumber.toString());
+        baGuaVo.setOriginalBaGua(BaGua.createBaGua(isChangeMap, originNumber.toString()));
+        baGuaVo.setExistChanged(isChange);
+        baGuaVo.setChangedBaGua(isChange
+                ? BaGua.createChangeBaGua(BaGua.GONG_WEI_TO_SHU_XIN.get(originBaGua.getGongWei()), changeNumber.toString())
+                : null);
+        if(!Objects.equals(CastType.IMAGE.getDescription(), baGuaDto.getCastType().getDescription())){
+            baGuaVo.setLocalDateTime(baGuaDto.getCastTime());
+            BaZi baZi = BaZiUtil.baziConvertByTime(baGuaDto.getCastTime());
+            compositionLiuShen(baGuaVo.getOriginalBaGua(), baZi.getDayTianGan());
+            baGuaVo.setShenSha(createShenSha(baZi.getYearDiZhi(), baZi.getMonthDiZhi(), baZi.getDayDiZhi(), baZi.getDayTianGan()));
+            baGuaVo.setBaZi(baZi);
+        } else if(Strings.isNotBlank(baGuaDto.getCustomTime()) && baGuaDto.getCustomTime().contains("日") && baGuaDto.getCustomTime().length() >= 2){
+            int riIndex = baGuaDto.getCustomTime().indexOf("日");
+            String tianGan = String.valueOf(baGuaDto.getCustomTime().substring(riIndex - 2, riIndex).charAt(0));
+            compositionLiuShen(baGuaVo.getOriginalBaGua(), TianGan.getTianGanByName(tianGan));
+
+            baGuaVo.setCustomTime(baGuaDto.getCustomTime());
+        }
+        baGuaVo.formatting();
+        return baGuaVo;
+    }
+
+
+    /**
      * 根据主卦和变卦创建六爻卦象
      */
     public static BaGuaVo createBaGuaVoByBagua(BaGua originBaGuaDto, BaGua changedBaGua, BaZi baZi) {

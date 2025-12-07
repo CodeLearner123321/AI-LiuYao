@@ -71,6 +71,11 @@ public class AiLiuyaoHistory {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime castTime;
 
+    /**
+     * 自定义时间
+     */
+    private String customTime;
+
 
     /**
      * 判词：确定用户所测结果的一行小诗
@@ -115,6 +120,7 @@ public class AiLiuyaoHistory {
         baGuaDto.setTimestamp(this.timestamp);
         baGuaDto.setNumber(this.number);
         baGuaDto.setCastTime(this.castTime);
+        baGuaDto.setCustomTime(this.customTime);
         return baGuaDto;
     }
 }

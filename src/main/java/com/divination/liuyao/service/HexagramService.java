@@ -61,9 +61,10 @@ public class HexagramService {
                 return Hexagram.createBaGuaVoByTimestamp(baGuaDto);
             case RANDOM:
             case MANUAL:
-            case IMAGE:
                 // 数字起卦
                 return Hexagram.createBaGuaVoByNumber(baGuaDto);
+            case IMAGE:
+                return Hexagram.createBaGuaVoByNumber2(baGuaDto);
             default:
                 throw new IllegalArgumentException("卦象创建失败，参数错误,baGuaDto:" + JsonUtil.toJson(baGuaDto));
         }

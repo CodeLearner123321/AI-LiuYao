@@ -1,5 +1,6 @@
 package com.divination.liuyao.service;
 
+import cn.hutool.core.util.NumberUtil;
 import com.divination.liuyao.assemblies.enums.CastType;
 import com.divination.liuyao.exception.BusinessException;
 import com.divination.liuyao.mapper.AiLiuyaoHistoryMapper;
@@ -46,6 +47,14 @@ public class AiLiuyaoHistoryService {
         }
         AiLiuyaoHistoryAllVO aiLiuyaoHistoryAllVO = new AiLiuyaoHistoryAllVO();
         List<AiLiuyaoHistoryVO> aiLiuyaoHistoryVOS = getUserHistory(userId);
+        //将消费1的置为0(消费1代表使用的是一次免费额度)
+        aiLiuyaoHistoryVOS.forEach(o -> {
+            if(o.getAmount() != null
+                    && NumberUtil.isNumber(o.getAmount())
+                    && BigDecimal.valueOf(1).compareTo(new BigDecimal(o.getAmount())) == 0){
+                o.setAmount(0 + "");
+            }
+        });
         aiLiuyaoHistoryAllVO.setAiLiuyaoHistoryVOS(aiLiuyaoHistoryVOS);
         List<AiLiuyaoHistoryVO> validList = aiLiuyaoHistoryVOS.stream()
                 .filter(vo -> vo.getIsAccurate() != null)
@@ -137,6 +146,7 @@ public class AiLiuyaoHistoryService {
         vo.setCastType(history.getCastType() != null ? history.getCastType().getDescription() : "");
         vo.setAmount(history.getAmount());
         vo.setIsAccurate(history.getIsAccurate());
+        vo.setCustomTime(history.getCustomTime());
         return vo;
     }
 
