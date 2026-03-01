@@ -75,13 +75,13 @@ public class LLMServiceFactory {
     public AiResult generateText(String systemPrompt, String prompt, CastDto castDto) throws NoApiKeyException, InputRequiredException {
         //如果有一个为null，则优先用系统提供的大语言模型实现
         if (castDto.getLlmServiceType() == null || castDto.getModelId() == null || castDto.getApiKey() == null) {
-            AiResult aiResult = getLLMService(LLMServiceType.DASHSCOPE).generateText(systemPrompt, prompt, ModelType.DeepSeek, null);
+            AiResult aiResult = getLLMService(LLMServiceType.DASHSCOPE).generateText(systemPrompt, prompt, ModelType.DeepSeek, null, true);
             aiResult.setIsTrue(!aiResult.isFalse());
             return aiResult;
         }
 
         //都不为空则调用自定义的资源实现
-        AiResult aiResult = getLLMService(castDto.getLlmServiceType()).generateText(systemPrompt, prompt, castDto.getModelId(), castDto.getApiKey());
+        AiResult aiResult = getLLMService(castDto.getLlmServiceType()).generateText(systemPrompt, prompt, castDto.getModelId(), castDto.getApiKey(), true);
         aiResult.setIsTrue(!aiResult.isFalse());
         return aiResult;
     }

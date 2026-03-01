@@ -66,11 +66,11 @@ public class DashScopeLLMServiceImpl implements LLMService {
      *
      * @param systemPrompt
      * @param userPrompt
-     * @param modelType 目前只支持DeepSeek
+     * @param modelType
      * @param apiKey
      */
     @Override
-    public AiResult generateText(String systemPrompt, String userPrompt, ModelType modelType, String apiKey)
+    public AiResult generateText(String systemPrompt, String userPrompt, ModelType modelType, String apiKey, Boolean processTheText)
         throws NoApiKeyException, InputRequiredException {
         Generation gen = new Generation();
         Message userMsg = Message.builder()
@@ -85,7 +85,13 @@ public class DashScopeLLMServiceImpl implements LLMService {
             .build();
         GenerationResult call = gen.call(param);
         String content = call.getOutput().getChoices().get(0).getMessage().getContent();
-        AiResult aiResult = AIUtil.conductAIResults(content);
+        AiResult aiResult = new AiResult();
+        if(processTheText != null && processTheText) {
+            aiResult = AIUtil.conductAIResults(content);
+        } else {
+            aiResult.setText(content);
+        }
+
         aiResult.setInputToken(Long.valueOf(call.getUsage().getInputTokens()));
         aiResult.setOutputToken(Long.valueOf(call.getUsage().getOutputTokens()));
 

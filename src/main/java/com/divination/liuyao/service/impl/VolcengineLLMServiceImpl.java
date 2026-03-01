@@ -59,7 +59,7 @@ public class VolcengineLLMServiceImpl implements LLMService {
      * @param apiKey
      */
     @Override
-    public AiResult generateText(String systemPrompt, String userPrompt, ModelType modelType, String apiKey) {
+    public AiResult generateText(String systemPrompt, String userPrompt, ModelType modelType, String apiKey, Boolean processTheText) {
         String contents = "";
         AiResult aiResult = new AiResult();
         try {
@@ -83,7 +83,13 @@ public class VolcengineLLMServiceImpl implements LLMService {
             contents = choices.stream()
                     .map(choice -> choice.getMessage().stringContent())
                     .collect(Collectors.joining("\n"));
-            aiResult = AIUtil.conductAIResults(contents);
+            if(processTheText != null && processTheText) {
+                aiResult = AIUtil.conductAIResults(contents);
+            } else {
+                AiResult result = new AiResult();
+                result.setText(contents);
+                aiResult = result;
+            }
             aiResult.setInputToken(chatCompletion.getUsage().getPromptTokens());
             aiResult.setOutputToken(chatCompletion.getUsage().getCompletionTokens());
         } finally {

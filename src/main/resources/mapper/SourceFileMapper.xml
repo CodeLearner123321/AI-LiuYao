@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.divination.liuyao.mapper.SourceFileMapper">
+
+    <!-- 按需查询文件解析状态（仅返回前端轮询所需字段） -->
+    <select id="selectStatusById" resultType="com.divination.liuyao.pojo.vo.SourceFileStatusVO">
+        SELECT id, file_name, file_type, file_size, text_length, total_cases, parse_status, created_at, updated_at
+        FROM source_file
+        WHERE id = #{id} AND is_deleted = 0
+        LIMIT 1
+    </select>
+
+    <!-- 按 MD5 查找文件记录（用于上传去重） -->
+    <select id="findByMd5" resultType="com.divination.liuyao.pojo.entity.SourceFile">
+        SELECT * FROM source_file
+        WHERE file_md5 = #{md5} AND is_deleted = 0
+        LIMIT 1
+    </select>
+
+    <!-- 更新解析状态和卦例总数 -->
+    <update id="updateParseResult">
+        UPDATE source_file
+        SET parse_status = #{parseStatus}, total_cases = #{totalCases}
+        WHERE id = #{id}
+    </update>
+</mapper>

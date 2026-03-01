@@ -17,7 +17,7 @@ public interface LLMService {
      * 调用大语言模型生成文本
      *系统提示词, 用户提示词, 模型类型, apiKey
      */
-    AiResult generateText(String systemPrompt, String userPrompt, ModelType modelType, String apiKey) throws NoApiKeyException, InputRequiredException;
+    AiResult generateText(String systemPrompt, String userPrompt, ModelType modelType, String apiKey, Boolean processTheText) throws NoApiKeyException, InputRequiredException;
 
     /**
      * 图片处理

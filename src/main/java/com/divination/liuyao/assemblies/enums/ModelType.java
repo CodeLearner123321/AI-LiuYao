@@ -7,8 +7,9 @@ import java.util.Arrays;
 
 @Getter
 public enum ModelType {
-    DeepSeek("deepseek-r1", "deepseek-r1","deepseek-r1-250528"),
-    qwenVLPlus("qwen-vl-max", "qwen-vl-max","qwen-vl-max")
+    DeepSeek("deepseek-r1", "deepseek-r1","deepseek-r1-250528"), //文本识别模型
+    qwenPlus("qwen-plus", "qwen-plus","qwen-plus"), //文本识别模型
+    qwenVLPlus("qwen-vl-max", "qwen-vl-max","qwen-vl-max") //图形识别模型
     ;
 
 
