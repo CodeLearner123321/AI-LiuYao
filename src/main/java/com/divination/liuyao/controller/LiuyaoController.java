@@ -1,10 +1,12 @@
 package com.divination.liuyao.controller;
 
 import com.divination.liuyao.annotation.RateLimit;
+import com.divination.liuyao.assemblies.enums.CastType;
 import com.divination.liuyao.assemblies.enums.LLMServiceType;
 import com.divination.liuyao.pojo.dto.BaGuaDto;
 import com.divination.liuyao.pojo.dto.BaZi;
 import com.divination.liuyao.pojo.dto.CastDto;
+import com.divination.liuyao.pojo.dto.GeneratePromptRequest;
 import com.divination.liuyao.pojo.dto.UserPermissionDTO;
 import com.divination.liuyao.pojo.entity.User;
 import com.divination.liuyao.pojo.enums.UserRoleType;
@@ -14,6 +16,7 @@ import com.divination.liuyao.pojo.vo.BaGuaVo;
 import com.divination.liuyao.pojo.vo.RecognizeImageVo;
 import com.divination.liuyao.pojo.vo.TaskQueryVO;
 import com.divination.liuyao.result.RespEntity;
+import com.divination.liuyao.service.AiAnalysisService;
 import com.divination.liuyao.service.HexagramService;
 import com.divination.liuyao.service.TaskService;
 import com.divination.liuyao.util.BaZiUtil;
@@ -50,6 +53,9 @@ public class LiuyaoController {
 
     @Autowired
     private TaskService taskService;
+
+    @Autowired
+    private AiAnalysisService aiAnalysisService;
     
     @Value("${ai.default-llm-service:volcengine}")
     private String defaultLLMService;
@@ -128,6 +134,24 @@ public class LiuyaoController {
     public RespEntity<BaGuaVo> calculateLiuYao(@Valid @RequestBody BaGuaDto baGuaDto) {
         BaGuaVo baGuaVo = hexagramService.calculateLiuYao(baGuaDto);
         return RespEntity.ok(baGuaVo);
+    }
+
+    /**
+     * 生成用于AI分析的提示词（不调用模型）
+     */
+    @PostMapping("/generate/prompt")
+    @RateLimit(period = 60, timeUnit = TimeUnit.SECONDS, maxRequests = 24, message = "操作过于频繁，请稍后再试！")
+    public RespEntity<String> generatePrompt(@Valid @RequestBody GeneratePromptRequest request) {
+        CastDto castDto = new CastDto();
+        castDto.setCastType(CastType.MANUAL);
+        castDto.setCastTime(request.getCastTime());
+        castDto.setNumber(request.getNumber());
+        castDto.setQuestion(request.getQuestion());
+        castDto.setBackground(request.getBackground());
+
+        Hexagram hexagram = hexagramService.castHexagram(castDto);
+        String prompt = aiAnalysisService.buildConstructionPrompt(hexagram, request.getQuestion(), request.getBackground());
+        return RespEntity.ok(prompt);
     }
 
     /**

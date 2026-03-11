@@ -193,6 +193,94 @@ public class AiAnalysisService {
     /**
      * 分析卦象（包含问题和背景）
      */
+    public String buildAnalysisPrompt(Hexagram hexagram, String question, String background) {
+        // 准备模板参数
+        Map<String, Object> templateParams = new HashMap<>();
+
+        // 设置问题和背景
+        templateParams.put("question", question);
+        templateParams.put("background", background);
+
+        // 处理时间信息
+        String timeString = null;
+        if(hexagram.getCustomTime() != null && !hexagram.getCustomTime().isEmpty()){
+            timeString = hexagram.getCustomTime();
+        } else if(hexagram.getLocalDateTime() == null && hexagram.getBaZi() != null){
+            timeString = hexagram.getBaZi().toString();
+        } else if(hexagram.getLocalDateTime() != null){
+            timeString = BaZiUtil.getAllByLocalDateTime(hexagram.getLocalDateTime());
+        }
+        templateParams.put("timeString", timeString);
+
+        // 设置卦名
+        templateParams.put("guaString", hexagram.getGuaStringByPosition(hexagram.isExistChanged()));
+
+        // 设置神煞
+        if(hexagram.getShenSha() != null && !hexagram.getShenSha().isEmpty()){
+            templateParams.put("shenShaString", hexagram.getShenShaString());
+        }
+
+        // 设置六爻信息（从上爻到初爻）
+        List<String> yaoStrings = new ArrayList<>();
+        for (int i = 5; i >= 0; i--) {
+            yaoStrings.add(hexagram.getYaoStringByPosition(i, hexagram.isExistChanged()));
+        }
+        templateParams.put("yaoStrings", yaoStrings);
+
+        // 设置错误代码
+        templateParams.put("errorCode", ConstantUtil.AI_ERROR_RESULT_CODE);
+
+        // 使用模板生成用户提示
+        return FreemarkerUtil.render("liuyao_analysis_prompt.ftl", templateParams);
+    }
+
+    /**
+     * 使用 construction_ai_prompt.ftl 生成最终提示词（融合版）
+     */
+    public String buildConstructionPrompt(Hexagram hexagram, String question, String background) {
+        // 准备模板参数
+        Map<String, Object> templateParams = new HashMap<>();
+
+        // 设置问题和背景
+        templateParams.put("question", question);
+        templateParams.put("background", background);
+
+        // 处理时间信息
+        String timeString = null;
+        if(hexagram.getCustomTime() != null && !hexagram.getCustomTime().isEmpty()){
+            timeString = hexagram.getCustomTime();
+        } else if(hexagram.getLocalDateTime() == null && hexagram.getBaZi() != null){
+            timeString = hexagram.getBaZi().toString();
+        } else if(hexagram.getLocalDateTime() != null){
+            timeString = BaZiUtil.getAllByLocalDateTime(hexagram.getLocalDateTime());
+        }
+        templateParams.put("timeString", timeString);
+
+        // 设置卦名
+        templateParams.put("guaString", hexagram.getGuaStringByPosition(hexagram.isExistChanged()));
+
+        // 设置神煞
+        if(hexagram.getShenSha() != null && !hexagram.getShenSha().isEmpty()){
+            templateParams.put("shenShaString", hexagram.getShenShaString());
+        }
+
+        // 设置六爻信息（从上爻到初爻）
+        List<String> yaoStrings = new ArrayList<>();
+        for (int i = 5; i >= 0; i--) {
+            yaoStrings.add(hexagram.getYaoStringByPosition(i, hexagram.isExistChanged()));
+        }
+        templateParams.put("yaoStrings", yaoStrings);
+
+        // 设置错误代码
+        templateParams.put("errorCode", ConstantUtil.AI_ERROR_RESULT_CODE);
+
+        // 使用融合模板生成最终提示词
+        return FreemarkerUtil.render("construction_ai_prompt.ftl", templateParams);
+    }
+
+    /**
+     * 分析卦象（包含问题和背景）
+     */
     public AiResult analyzeHexagram(Hexagram hexagram, CastDto castDto)
         throws InterruptedException, NoApiKeyException, InputRequiredException {
         String question = castDto.getQuestion();
@@ -201,45 +289,8 @@ public class AiAnalysisService {
         try {
             // 使用模板生成系统提示
             String systemPrompt = FreemarkerUtil.render("liuyao_system_prompt.ftl", new HashMap<>());
-            
-            // 准备模板参数
-            Map<String, Object> templateParams = new HashMap<>();
-            
-            // 设置问题和背景
-            templateParams.put("question", question);
-            templateParams.put("background", background);
-            
-            // 处理时间信息
-            String timeString = null;
-            if(hexagram.getCustomTime() != null && !hexagram.getCustomTime().isEmpty()){
-                timeString = hexagram.getCustomTime();
-            } else if(hexagram.getLocalDateTime() == null && hexagram.getBaZi() != null){
-                timeString = hexagram.getBaZi().toString();
-            } else if(hexagram.getLocalDateTime() != null){
-                timeString = BaZiUtil.getAllByLocalDateTime(hexagram.getLocalDateTime());
-            }
-            templateParams.put("timeString", timeString);
-            
-            // 设置卦名
-            templateParams.put("guaString", hexagram.getGuaStringByPosition(hexagram.isExistChanged()));
-            
-            // 设置神煞
-            if(hexagram.getShenSha() != null && !hexagram.getShenSha().isEmpty()){
-                templateParams.put("shenShaString", hexagram.getShenShaString());
-            }
-            
-            // 设置六爻信息（从上爻到初爻）
-            List<String> yaoStrings = new ArrayList<>();
-            for (int i = 5; i >= 0; i--) {
-                yaoStrings.add(hexagram.getYaoStringByPosition(i, hexagram.isExistChanged()));
-            }
-            templateParams.put("yaoStrings", yaoStrings);
-            
-            // 设置错误代码
-            templateParams.put("errorCode", ConstantUtil.AI_ERROR_RESULT_CODE);
-            
-            // 使用模板生成用户提示
-            String prompt = FreemarkerUtil.render("liuyao_analysis_prompt.ftl", templateParams);
+
+            String prompt = buildAnalysisPrompt(hexagram, question, background);
 
             log.debug("准备发送AI请求，提示词长度: {}", prompt.length());
             log.debug("提示词为：\n{}", prompt);
