@@ -88,6 +88,7 @@ public class McpController {
             tool.put("name", toolHandler.getName());
             tool.put("description", toolHandler.getDescription());
             tool.set("inputSchema", toolSchemaGenerator.generate(toolHandler.getInputType()));
+            tool.set("outputSchema", toolSchemaGenerator.generate(toolHandler.getOutputType()));
         }
         return result;
     }

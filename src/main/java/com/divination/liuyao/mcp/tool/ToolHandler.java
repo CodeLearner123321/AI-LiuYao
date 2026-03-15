@@ -11,5 +11,7 @@ public interface ToolHandler<I, O> {
 
     Class<I> getInputType();
 
+    Class<O> getOutputType();
+
     ObjectNode execute(JsonNode arguments);
 }

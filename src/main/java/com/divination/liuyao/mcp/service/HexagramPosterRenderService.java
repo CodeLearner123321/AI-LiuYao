@@ -29,10 +29,10 @@ public class HexagramPosterRenderService {
     }
 
     public String renderAndUpload(
-        Hexagram hexagram,
-        Prediction prediction,
-        String sourceFileName,
-        Path backgroundImagePath
+            Hexagram hexagram,
+            Prediction prediction,
+            String sourceFileName,
+            Path backgroundImagePath
     ) throws IOException, InterruptedException {
         Path tempOutput = Files.createTempFile("hexagram-poster-", ".png");
         try {
@@ -46,20 +46,20 @@ public class HexagramPosterRenderService {
     }
 
     public Path renderToFile(
-        Hexagram hexagram,
-        Prediction prediction,
-        Path backgroundImagePath,
-        Path outputFilePath
+            Hexagram hexagram,
+            Prediction prediction,
+            Path backgroundImagePath,
+            Path outputFilePath
     ) throws IOException, InterruptedException {
         String html = htmlService.render(hexagram, prediction, backgroundImagePath);
         Path htmlFile = Files.createTempFile("hexagram-poster-", ".html");
         try {
             Files.writeString(htmlFile, html, StandardCharsets.UTF_8);
             return browserScreenshotService.captureHtml(
-                htmlFile,
-                outputFilePath,
-                HexagramPosterHtmlService.POSTER_WIDTH,
-                HexagramPosterHtmlService.POSTER_HEIGHT
+                    htmlFile,
+                    outputFilePath,
+                    HexagramPosterHtmlService.POSTER_WIDTH,
+                    HexagramPosterHtmlService.POSTER_HEIGHT
             );
         } finally {
             Files.deleteIfExists(htmlFile);

@@ -4,21 +4,27 @@ import com.divination.liuyao.mcp.model.RecognizedHexagramResult;
 import com.divination.liuyao.mcp.service.HexagramImageRecognitionService;
 import com.divination.liuyao.mcp.tool.ToolField;
 import com.divination.liuyao.mcp.tool.ToolHandler;
+import com.divination.liuyao.service.AiAnalysisService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.springframework.stereotype.Component;
 
 @Component
-public class RecognizeHexagramFromImageTool implements ToolHandler<RecognizeHexagramFromImageTool.Input, RecognizedHexagramResult> {
+public class RecognizeHexagramFromImageTool implements ToolHandler<RecognizeHexagramFromImageTool.Input, RecognizeHexagramFromImageTool.Output> {
 
     private final ObjectMapper objectMapper;
     private final HexagramImageRecognitionService recognitionService;
+    private final AiAnalysisService aiAnalysisService;
 
-    public RecognizeHexagramFromImageTool(ObjectMapper objectMapper, HexagramImageRecognitionService recognitionService) {
+    public RecognizeHexagramFromImageTool(
+        ObjectMapper objectMapper,
+        HexagramImageRecognitionService recognitionService,
+        AiAnalysisService aiAnalysisService
+    ) {
         this.objectMapper = objectMapper;
         this.recognitionService = recognitionService;
+        this.aiAnalysisService = aiAnalysisService;
     }
 
     @Override
@@ -28,12 +34,17 @@ public class RecognizeHexagramFromImageTool implements ToolHandler<RecognizeHexa
 
     @Override
     public String getDescription() {
-        return "识别网络图片中的六爻卦例，可选生成 HTML 海报图片，返回结构化卦象、文本卦象和成图结果。";
+        return "识别网络图片中的六爻卦例，可选生成海报图片，并基于识别卦象生成分析提示词。";
     }
 
     @Override
     public Class<Input> getInputType() {
         return Input.class;
+    }
+
+    @Override
+    public Class<Output> getOutputType() {
+        return Output.class;
     }
 
     @Override
@@ -46,48 +57,48 @@ public class RecognizeHexagramFromImageTool implements ToolHandler<RecognizeHexa
         boolean renderImage = input.getRenderImage() == null || input.getRenderImage();
         try {
             RecognizedHexagramResult result = recognitionService.recognize(input.getImageUrl(), renderImage);
-            return buildResponse(result);
+            String question = firstNonBlank(
+                input.getQuestion(),
+                result.getHexagram() == null ? null : result.getHexagram().getQuestionDescription()
+            );
+            String background = firstNonBlank(
+                input.getBackground(),
+                result.getHexagram() == null ? null : result.getHexagram().getQuestionBackground()
+            );
+            String constructionPrompt = aiAnalysisService.buildConstructionPrompt(
+                result.getHexagram(),
+                blankToEmpty(question),
+                blankToEmpty(background)
+            );
+            return buildResponse(result.getImageUrl(), constructionPrompt);
         } catch (Exception ex) {
             throw new IllegalArgumentException("识别卦例失败: " + ex.getMessage(), ex);
         }
     }
 
-    private ObjectNode buildResponse(RecognizedHexagramResult result) {
+    private ObjectNode buildResponse(String imageUrl, String constructionPrompt) {
         ObjectNode response = objectMapper.createObjectNode();
         response.put("isError", false);
-        response.set("structuredContent", objectMapper.valueToTree(result));
 
-        ArrayNode content = response.putArray("content");
-        content.addObject()
-            .put("type", "text")
-            .put("text", result.getHexagramText());
+        ObjectNode structuredContent = response.putObject("structuredContent");
+        structuredContent.put("imageUrl", blankToEmpty(imageUrl));
+        structuredContent.put("constructionPrompt", blankToEmpty(constructionPrompt));
 
-        content.addObject()
-            .put("type", "text")
-            .put("text", buildSummaryText(result));
-
-        if (result.getImageUrl() != null && !result.getImageUrl().isBlank()) {
-            content.addObject()
-                .put("type", "resource_link")
-                .put("uri", result.getImageUrl())
-                .put("name", "六爻卦例海报")
-                .put("mimeType", "image/png");
-        }
         return response;
     }
 
-    private String buildSummaryText(RecognizedHexagramResult result) {
-        StringBuilder builder = new StringBuilder();
-        builder.append("输入图片URL: ").append(nullSafe(result.getInputImageUrl())).append('\n');
-        builder.append("图片渲染状态: ").append(nullSafe(result.getImageRenderingStatus()));
-        if (result.getImageUrl() != null && !result.getImageUrl().isBlank()) {
-            builder.append('\n').append("海报URL: ").append(result.getImageUrl());
+    private String firstNonBlank(String first, String second) {
+        if (first != null && !first.isBlank()) {
+            return first;
         }
-        return builder.toString();
+        if (second != null && !second.isBlank()) {
+            return second;
+        }
+        return null;
     }
 
-    private String nullSafe(String value) {
-        return value == null || value.isBlank() ? "" : value;
+    private String blankToEmpty(String value) {
+        return value == null ? "" : value;
     }
 
     public static class Input {
@@ -96,6 +107,12 @@ public class RecognizeHexagramFromImageTool implements ToolHandler<RecognizeHexa
 
         @ToolField(description = "是否生成并上传卦象海报图片。默认 true。")
         private Boolean renderImage;
+
+        @ToolField(description = "用于构造提示词的问题描述。若不传则尝试使用图片识别结果中的问题。")
+        private String question;
+
+        @ToolField(description = "用于构造提示词的背景信息。若不传则尝试使用图片识别结果中的背景。")
+        private String background;
 
         public String getImageUrl() {
             return imageUrl;
@@ -112,5 +129,37 @@ public class RecognizeHexagramFromImageTool implements ToolHandler<RecognizeHexa
         public void setRenderImage(Boolean renderImage) {
             this.renderImage = renderImage;
         }
+
+        public String getQuestion() {
+            return question;
+        }
+
+        public void setQuestion(String question) {
+            this.question = question;
+        }
+
+        public String getBackground() {
+            return background;
+        }
+
+        public void setBackground(String background) {
+            this.background = background;
+        }
+    }
+
+    public static class Output {
+        @ToolField(description = "调用是否失败，成功时固定为 false。", required = true)
+        private Boolean isError;
+
+        @ToolField(description = "结构化返回内容。", required = true)
+        private StructuredContent structuredContent;
+    }
+
+    public static class StructuredContent {
+        @ToolField(description = "渲染生成的海报 URL。renderImage=false 时可能为空。", required = true)
+        private String imageUrl;
+
+        @ToolField(description = "根据识别卦象构建的分析提示词。", required = true)
+        private String constructionPrompt;
     }
 }
