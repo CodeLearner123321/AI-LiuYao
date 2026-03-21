@@ -99,6 +99,8 @@ AI-LiuYao是一个基于人工智能技术的六爻预测系统，旨在将传�
 
 ## 文档
 
+- [MCP使用教程](docs/mcp-usage-guide.md)
+
 - [LLM服务配置指南](docs/LLM-SERVICES.md)
 - [贡献指南](CONTRIBUTING.md)
 

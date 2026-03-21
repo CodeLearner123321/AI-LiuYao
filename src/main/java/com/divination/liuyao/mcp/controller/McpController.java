@@ -7,6 +7,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -18,6 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/mcp")
 public class McpController {
 
+    private static final Logger log = LoggerFactory.getLogger(McpController.class);
     private static final String PROTOCOL_VERSION = "2024-11-05";
 
     private final ObjectMapper objectMapper;
@@ -46,7 +49,8 @@ public class McpController {
         try {
             return handleRequest(id, method, request.path("params"));
         } catch (Exception ex) {
-            return errorResponse(id, -32000, ex.getMessage());
+            log.error("MCP request failed. method={}, id={}, request={}", method, id, request, ex);
+            return errorResponse(id, -32000, buildErrorMessage(ex));
         }
     }
 
@@ -116,5 +120,17 @@ public class McpController {
         error.put("code", code);
         error.put("message", message == null ? "Unknown error" : message);
         return response;
+    }
+
+    private String buildErrorMessage(Throwable throwable) {
+        Throwable root = throwable;
+        while (root.getCause() != null) {
+            root = root.getCause();
+        }
+        String message = root.getMessage();
+        if (message != null && !message.isBlank()) {
+            return message;
+        }
+        return root.getClass().getSimpleName();
     }
 }
