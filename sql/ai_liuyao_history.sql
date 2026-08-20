@@ -9,6 +9,7 @@ CREATE TABLE `ai_liuyao_history` (
 	`timestamp` bigint NULL COMMENT '时间戳，当cast_type为TIME时有值',
 	`number` varchar(6) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT '数字，一共六位数字，对应分别为：0-老阴，1-少阳，2-少阴，3-老阳',
 	`cast_time` datetime NOT NULL COMMENT '用户选定的时间',
+	`custom_time` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL COMMENT '自定义起卦时间描述',
 	`key_outcome` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT '判词：确定用户所测结果的一行小诗',
 	`result_data` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT '卦象结果数据（JSON格式）',
 	`duration_seconds` int NULL COMMENT '耗时秒数（单位：秒）',

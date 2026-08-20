@@ -1,6 +1,7 @@
 package com.divination.liuyao.mcp.tool.impl;
 
 import com.divination.liuyao.assemblies.enums.CastType;
+import com.divination.liuyao.mcp.exception.McpProtocolException;
 import com.divination.liuyao.mcp.model.RecognizedHexagramResult;
 import com.divination.liuyao.mcp.service.HexagramAnalysisPosterRenderService;
 import com.divination.liuyao.mcp.service.HexagramImageRecognitionService;
@@ -12,6 +13,7 @@ import com.divination.liuyao.pojo.model.AiResult;
 import com.divination.liuyao.service.AiAnalysisService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.net.URI;
 import java.nio.file.Files;
@@ -70,7 +72,7 @@ public class RecognizeHexagramWithAnalysisImageTool implements ToolHandler<Recog
     public ObjectNode execute(JsonNode arguments) {
         Input input = objectMapper.convertValue(arguments, Input.class);
         if (input.getImageUrl() == null || input.getImageUrl().isBlank()) {
-            throw new IllegalArgumentException("imageUrl is required");
+            throw McpProtocolException.invalidParams("imageUrl is required");
         }
 
         try {
@@ -100,10 +102,12 @@ public class RecognizeHexagramWithAnalysisImageTool implements ToolHandler<Recog
                     deriveSourceFileName(input.getImageUrl()),
                     backgroundImagePath
                 );
-                return buildResponse(imageUrl);
+                return buildResponse(recognized, analysisResult, imageUrl);
             } finally {
                 Files.deleteIfExists(backgroundImagePath);
             }
+        } catch (McpProtocolException ex) {
+            throw ex;
         } catch (Exception ex) {
             log.error("Failed to generate analysis poster. imageUrl={}", input.getImageUrl(), ex);
             throw new IllegalArgumentException("识别并生成断卦结果图失败: " + buildErrorMessage(ex), ex);
@@ -128,12 +132,25 @@ public class RecognizeHexagramWithAnalysisImageTool implements ToolHandler<Recog
     /**
      * 按 MCP 约定拼装结构化返回结果，只返回最终结果图地址。
      */
-    private ObjectNode buildResponse(String imageUrl) {
+    private ObjectNode buildResponse(RecognizedHexagramResult recognized, AiResult analysisResult, String imageUrl) {
         ObjectNode response = objectMapper.createObjectNode();
         response.put("isError", false);
 
         ObjectNode structuredContent = response.putObject("structuredContent");
+        String sourceImageUrl = firstNonBlank(recognized.getSourceImageUrl(), recognized.getInputImageUrl());
+        structuredContent.put("sourceImageUrl", blankToEmpty(sourceImageUrl));
         structuredContent.put("imageUrl", blankToEmpty(imageUrl));
+        structuredContent.put("hexagramText", blankToEmpty(recognized.getHexagramText()));
+        structuredContent.put("analysisText", blankToEmpty(analysisResult == null ? null : analysisResult.getText()));
+
+        ArrayNode content = response.putArray("content");
+        ObjectNode summaryText = content.addObject();
+        summaryText.put("type", "text");
+        summaryText.put("text", buildSummaryText(sourceImageUrl, imageUrl, recognized.getHexagramText()));
+
+        ObjectNode jsonText = content.addObject();
+        jsonText.put("type", "text");
+        jsonText.put("text", structuredContent.toString());
 
         return response;
     }
@@ -162,6 +179,20 @@ public class RecognizeHexagramWithAnalysisImageTool implements ToolHandler<Recog
 
     private String blankToEmpty(String value) {
         return value == null ? "" : value;
+    }
+
+    private String buildSummaryText(String sourceImageUrl, String imageUrl, String hexagramText) {
+        StringBuilder builder = new StringBuilder("断卦结果图已生成");
+        if (imageUrl != null && !imageUrl.isBlank()) {
+            builder.append("，图片地址: ").append(imageUrl);
+        }
+        if (sourceImageUrl != null && !sourceImageUrl.isBlank()) {
+            builder.append("\n来源图片: ").append(sourceImageUrl);
+        }
+        if (hexagramText != null && !hexagramText.isBlank()) {
+            builder.append("\n卦象文本: ").append(hexagramText);
+        }
+        return builder.toString();
     }
 
     private String deriveSourceFileName(String imageUrl) {
@@ -222,13 +253,33 @@ public class RecognizeHexagramWithAnalysisImageTool implements ToolHandler<Recog
 
         @ToolField(description = "结构化返回内容。", required = true)
         private StructuredContent structuredContent;
+
+        @ToolField(description = "兼容 MCP 客户端的人类可读内容。", required = true)
+        private ContentItem[] content;
     }
 
     /**
      * MCP 结构化返回内容，仅包含结果图地址。
      */
     public static class StructuredContent {
+        @ToolField(description = "识别输入的原始图片 URL。", required = true)
+        private String sourceImageUrl;
+
         @ToolField(description = "渲染生成的断卦结果图 URL。", required = true)
         private String imageUrl;
+
+        @ToolField(description = "识别得到的卦象文本。", required = true)
+        private String hexagramText;
+
+        @ToolField(description = "AI 断卦分析文本。", required = true)
+        private String analysisText;
+    }
+
+    public static class ContentItem {
+        @ToolField(description = "内容类型，当前固定为 text。", required = true)
+        private String type;
+
+        @ToolField(description = "供模型或用户直接读取的文本内容。", required = true)
+        private String text;
     }
 }

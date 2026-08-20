@@ -81,12 +81,12 @@ public class HexagramService {
         String fileName = file.getOriginalFilename();
         User user = UserContextHolder.getUser();
         String username = user.getUserName();
-        String ossPath = "recognizeImage/" + username;
-        String ossUrl;
+        String objectPath = "recognizeImage/" + username;
+        String imageUrl;
         try {
-            ossUrl = OSSUtil.uploadFile(ossPath, fileName, file.getInputStream());
+            imageUrl = OSSUtil.uploadFile(objectPath, fileName, file.getInputStream());
         } catch (Exception e) {
-            log.error("文件上传OSS失败", e);
+            log.error("文件上传对象存储失败", e);
             return new RecognizeImageVo();
         }
 
@@ -99,8 +99,8 @@ public class HexagramService {
 
         RecognizeImageVo recognizeImageVo = new RecognizeImageVo();
         AiResult aiResult = llmServiceFactory.generateTextByImage(ConstantUtil.IMAGE_SYSTEM_PROMPT ,
-                finalPrompt, ossUrl);
-        log.info("AI图片分析结果：" + aiResult.getText());
+                finalPrompt, imageUrl);
+        log.debug("AI图片分析完成，响应文本长度: {}", aiResult.getText() == null ? 0 : aiResult.getText().length());
         BigDecimal price = paymentService.confirmPay(PaymentType.BALANCE_PAYMENT, AITaskType.IMAGE, user.getId(), aiResult);
         Prediction prediction = JsonUtils.fromJson(aiResult.getText(), Prediction.class);
         Hexagram hexagram = calculateLiuYaoByImage(prediction);
@@ -120,7 +120,11 @@ public class HexagramService {
         hexagram.setExistChanged(baGuaVo.getExistChanged());
         hexagram.setShenSha(baGuaVo.getShenSha());
         hexagram.setLocalDateTime(baGuaVo.getLocalDateTime());
+        hexagram.setBaZi(baGuaVo.getBaZi());
         hexagram.setCustomTime(baGuaVo.getCustomTime());
+        hexagram.setQuestionDescription(castDto.getQuestion());
+        hexagram.setQuestionBackground(castDto.getBackground());
+        hexagram.setNumber(castDto.getNumber());
 
         return hexagram;
     }

@@ -1,109 +1,95 @@
-# AI-LiuYao 六爻预测系统
+# AI-LiuYao
 
-> AI赋能的现代六爻预测系统，结合传统占卜与现代人工智能技术
+AI-LiuYao 是一个基于 Java 11 和 Spring Boot 2.7 的六爻起卦与 AI 分析服务。项目包含用户认证、异步分析任务、历史记录、卡密、图片识卦、MinIO 对象存储，以及可供 AI 客户端调用的 MCP 工具。
 
-## 项目介绍
+> 本项目用于传统文化研究与软件技术交流，输出内容不构成医疗、法律、投资或其他专业建议。
 
-AI-LiuYao是一个基于人工智能技术的六爻预测系统，旨在将传统的六爻占卜方法与现代AI技术相结合，为用户提供更加智能、便捷的命理预测服务。
+## 功能
 
-## 解决的问题
+- 时间、随机和手动起卦
+- DashScope 与火山引擎 LLM 适配
+- 异步分析任务、余额/免费额度和历史记录
+- 图片卦象识别与结果海报渲染
+- MCP JSON-RPC 接口与今日运势工具
+- JWT 认证、Redis 限流、MySQL 持久化和 MinIO 文件存储
+- Docker Compose 本地运行
 
-本项目主要解决以下问题：
+## 技术要求
 
-1. **传统六爻预测的复杂性**：传统六爻预测需要专业知识背景，普通人难以掌握。本系统通过AI技术降低了六爻预测的门槛，使普通用户也能获得专业级的预测服务。
+- JDK 11、Maven 3.6+
+- MySQL 8.0、Redis 6+
+- MinIO 或其他 S3 兼容对象存储
+- Chromium/Chrome/Edge（仅海报渲染需要）
+- 至少一个可用的 LLM API Key
 
-2. **命理预测的个性化需求**：每个用户的问题和背景各不相同，本系统支持用户输入具体问题和背景，提供针对性的分析结果。
+## Docker 快速启动
 
-3. **预测结果的准确性和解释性**：利用先进的AI大模型，结合传统六爻理论，提供更加准确、详细和易于理解的预测分析。
+```bash
+cp .env.example .env
+# 编辑 .env，替换所有 replace/change_me 占位值，并配置至少一个 LLM API Key
+docker compose up --build
+```
 
-4. **随时随地的预测需求**：系统提供多种起卦方式（时间起卦、随机起卦、手动起卦），支持用户在任何时间、任何地点进行预测咨询。
+默认地址：Web/API `http://localhost:8080`，MinIO API `http://localhost:9000`，MinIO Console `http://localhost:9001`。
 
-## 技术栈
+首次创建 MySQL 数据卷时，`docker/mysql/init/001-init.sql` 会初始化表结构。修改初始化 SQL 后如需重新初始化，请先备份数据再重建数据卷。
 
-### 后端技术
-- **核心框架**：Spring Boot 2.7.0
-- **持久层**：MyBatis + MySQL
-- **缓存技术**：Redis
-- **认证授权**：JWT (JSON Web Token)
-- **异步处理**：Spring @Async
+## 本地开发
 
-### AI技术
-- **AI大模型集成**：
-  - 火山引擎 DeepSeek-r1 模型 (主要分析引擎)
-  - 阿里百练(DashScope) 通义千问模型
-  - 支持多模型动态切换
+```bash
+docker compose up -d mysql redis minio
+cp src/main/resources/application-example.yml src/main/resources/application-dev.yml
+mvn spring-boot:run -Dspring-boot.run.profiles=dev
+```
 
-### 数据处理
-- **命理计算工具**：lunar (八字转换工具)
-- **JSON处理**：Jackson
-- **工具库**：Hutool、Guava
+填写 `application-dev.yml` 后再启动。不要提交 `.env`、环境配置或任何真实凭据。
 
-### 数据存储
-- **关系型数据库**：MySQL
-- **缓存数据库**：Redis
+## 关键配置
 
-## 项目亮点
+| 环境变量 | 用途 | 是否必需 |
+| --- | --- | --- |
+| `JWT_SECRET` | JWT 签名密钥，至少 64 个随机字符 | 是 |
+| `AI_DASHSCOPE_API_KEY` | 阿里百练 API Key | 二选一 |
+| `AI_VOLCENGINE_API_KEY` | 火山引擎 API Key | 二选一 |
+| `DEFAULT_API_KEY` | 系统支付链路使用的默认模型 Key | 使用系统额度时 |
+| `APP_MCP_API_KEY` | MCP 接口访问密钥 | 是 |
+| `APP_ADMIN_USERNAMES` | 逗号分隔的管理员用户名 | 管理功能需要 |
+| `APP_CORS_ALLOWED_ORIGINS` | 允许携带凭证访问的前端 Origin | 跨域前端需要 |
+| `MINIO_ENDPOINT` | S3 兼容对象存储地址 | 图片功能需要 |
+| `MCP_BROWSER_PATH` | Chromium/Chrome/Edge 可执行文件 | 海报功能需要 |
 
-### 1. 多种起卦方式
-- **系统时间起卦**：基于当前时间自动生成卦象
-- **系统随机起卦**：系统自动生成随机数值形成卦象
-- **手动起卦**：用户可以自行输入数值进行起卦
+完整示例见 [.env.example](.env.example) 和 [application-example.yml](src/main/resources/application-example.yml)。
 
-### 2. AI智能分析
-- **接入多家大模型**：支持火山引擎DeepSeek和阿里百练通义千问模型
-- **结构化分析结果**：AI分析结果包含卦象解释、吉凶判断、问题分析等多个维度
-- **关键词提取**：自动提取分析结果中的关键判词，方便用户快速了解核心信息
-- **模型灵活切换**：可在请求中指定使用哪家AI模型服务
+## MCP
 
-### 3. 异步任务处理
-- **任务队列机制**：采用异步处理方式执行AI分析任务，提高系统响应速度
-- **任务状态追踪**：用户可以实时查询任务状态和分析进度
+MCP 入口为 `POST /mcp`，工具列表可通过 `GET /mcp/tools` 查询。所有请求必须携带独立密钥：
 
-### 4. 安全机制
-- **JWT认证**：采用JWT进行用户身份验证，保障API安全
-- **分布式锁**：使用Redis实现分布式锁，防止任务重复执行
-- **错误处理**：完善的异常处理机制，确保系统稳定性
+```http
+Authorization: Bearer <APP_MCP_API_KEY>
+```
 
-### 5. 用户体验优化
-- **历史记录功能**：自动保存用户的预测历史，方便用户回顾查看
-- **八字转换**：支持农历日期与阳历日期的自动转换
-- **事务管理**：采用Spring事务管理，确保数据一致性
+也支持 `X-MCP-API-Key` 请求头。更多说明：
 
-## 使用说明
+- [MCP 使用教程](docs/mcp-usage-guide.md)
+- [MCP 调用方指南](docs/mcp-caller-guide.md)
+- [MCP 外部接入](docs/mcp-external-integration.md)
+- [MCP 架构](docs/mcp-architecture.md)
 
-1. 注册并登录系统
-2. 选择起卦方式（时间起卦、随机起卦或手动起卦）
-3. 输入您的问题和背景信息
-4. 可选择指定使用的LLM服务类型（详见[LLM服务配置指南](docs/LLM-SERVICES.md)）
-5. 等待AI分析结果
-6. 查看详细的预测分析报告
+## 测试
 
-## 技术特点
+```bash
+# 默认单元测试，不依赖浏览器或外部 MinIO
+./mvnw test
 
-- **模块化设计**：系统采用清晰的分层结构，便于扩展和维护
-- **高并发支持**：异步处理和缓存机制支持高并发访问
-- **灵活配置**：支持多环境配置（开发、生产环境）
-- **完善的日志**：详细的日志记录，便于问题排查和系统监控
-- **优化的AI服务结构**：
-  - 将AI服务模块化，提取出LLMService接口和实现类，使系统更易扩展
-  - 遵循单一职责原则，AiAnalysisService专注于分析逻辑，LLMService负责与AI模型交互
-  - 支持更容易切换或添加不同的AI模型实现，如火山引擎、阿里云、OpenAI等
-  - 工厂模式设计，灵活选择不同的LLM服务
+# Chromium 海报集成测试
+./mvnw -Pintegration-tests -Dtest='Hexagram*PosterRenderServiceTest' test
 
-## 未来计划
+# MinIO 集成测试
+./mvnw -Dtest=OSSUtilTest -Dminio.integration.enabled=true test
+```
 
-- 支持更多AI模型的接入
-- 增加更丰富的预测类型
-- 优化分析算法，提高预测准确性
-- 添加用户反馈机制，持续改进系统
+## 安全与贡献
 
-## 文档
-
-- [MCP使用教程](docs/mcp-usage-guide.md)
-
-- [LLM服务配置指南](docs/LLM-SERVICES.md)
-- [贡献指南](CONTRIBUTING.md)
-
----
-
-AI-LiuYao项目致力于将传统文化与现代科技相结合，为用户提供智能化的命理预测服务。我们期待您的宝贵意见和建议，共同推动项目的发展与完善。
+- 安全问题请按 [SECURITY.md](SECURITY.md) 私下报告。
+- 贡献流程见 [CONTRIBUTING.md](CONTRIBUTING.md)。
+- 项目采用 [Apache License 2.0](LICENSE)。贡献者必须有权按该许可证提供相关代码和素材。

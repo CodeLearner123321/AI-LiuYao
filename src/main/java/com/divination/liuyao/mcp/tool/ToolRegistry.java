@@ -1,5 +1,6 @@
 package com.divination.liuyao.mcp.tool;
 
+import com.divination.liuyao.mcp.exception.McpProtocolException;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -26,8 +27,8 @@ public class ToolRegistry {
 
     public ToolHandler<?, ?> getRequired(String name) {
         ToolHandler<?, ?> handler = handlers.get(name);
-        if (handler == null) {
-            throw new IllegalArgumentException("Unsupported tool: " + name);
+        if (name == null || name.isBlank() || handler == null) {
+            throw McpProtocolException.invalidParams("Unsupported tool: " + name);
         }
         return handler;
     }

@@ -17,14 +17,16 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Tag;
 
 import static com.divination.liuyao.pojo.model.Hexagram.createShenSha;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@Tag("integration")
 class HexagramPosterRenderServiceTest {
 
     private static final Path DEFAULT_BACKGROUND = Paths.get(
-        "package", "status", "images", "default-poster-background.png"
+        "src", "main", "resources", "images", "default-poster-background.png"
     );
 
     @Test

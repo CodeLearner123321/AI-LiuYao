@@ -17,10 +17,12 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Tag;
 
 import static com.divination.liuyao.pojo.model.Hexagram.createShenSha;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@Tag("integration")
 class HexagramAnalysisPosterRenderServiceTest {
 
     @Test
@@ -53,7 +55,7 @@ class HexagramAnalysisPosterRenderServiceTest {
         try {
             for (TestCase testCase : cases) {
                 HexagramAnalysisPosterHtmlService.RenderedPoster renderedPoster =
-                    htmlService.render(hexagram, prediction, testCase.analysisResult, backgroundPath);
+                    htmlService.render(hexagram, prediction, testCase.analysisResult, backgroundPath.getFileName().toString());
                 Path output = Path.of("target", "test-output", "hexagram-analysis-poster-" + testCase.name + ".png");
                 Path actual = service.renderToFile(hexagram, prediction, testCase.analysisResult, backgroundPath, output);
                 assertTrue(Files.exists(actual), "结果图未生成: " + actual);

@@ -2,12 +2,16 @@ package com.divination.liuyao.mcp.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sun.net.httpserver.Headers;
+import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpServer;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.URI;
+import java.net.URLDecoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -16,6 +20,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -50,6 +55,7 @@ public class BrowserScreenshotService {
     );
     private static final long STARTUP_TIMEOUT_MILLIS = 10_000L;
     private static final long COMMAND_TIMEOUT_MILLIS = 10_000L;
+    private static final String BROWSER_NO_SANDBOX_ENV = "MCP_BROWSER_NO_SANDBOX";
 
     private final Object sessionLock = new Object();
     private volatile BrowserSession session;
@@ -61,11 +67,14 @@ public class BrowserScreenshotService {
         }
 
         BrowserSession activeSession = getOrCreateSession();
+        TemporaryHttpFileServer fileServer = TemporaryHttpFileServer.start(htmlPath);
         try {
-            activeSession.capture(htmlPath.toUri().toString(), normalizedOutput, width, height);
+            activeSession.capture(fileServer.entryUri().toString(), normalizedOutput, width, height);
         } catch (IOException ex) {
             invalidateSession(activeSession);
             throw ex;
+        } finally {
+            fileServer.close();
         }
         return normalizedOutput;
     }
@@ -119,6 +128,14 @@ public class BrowserScreenshotService {
         throw new IllegalStateException("未找到可用浏览器，请配置 MCP_BROWSER_PATH 或安装 Edge/Chrome");
     }
 
+    private static int findFreePort() throws IOException {
+        try (ServerSocket socket = new ServerSocket()) {
+            socket.setReuseAddress(true);
+            socket.bind(new InetSocketAddress("127.0.0.1", 0));
+            return socket.getLocalPort();
+        }
+    }
+
     private static final class BrowserSession implements AutoCloseable {
 
         private final Process process;
@@ -136,7 +153,7 @@ public class BrowserScreenshotService {
         }
 
         static BrowserSession start(Path browserPath) throws IOException, InterruptedException {
-            int port = findFreePort();
+            int port = BrowserScreenshotService.findFreePort();
             Path userDataDir = Files.createTempDirectory("hexagram-browser-profile-");
 
             List<String> command = new ArrayList<>();
@@ -144,6 +161,9 @@ public class BrowserScreenshotService {
             command.add("--headless=new");
             command.add("--disable-gpu");
             command.add("--hide-scrollbars");
+            if (isNoSandboxEnabled()) {
+                command.add("--no-sandbox");
+            }
             command.add("--remote-debugging-port=" + port);
             command.add("--user-data-dir=" + userDataDir.toAbsolutePath().normalize());
             command.add("about:blank");
@@ -164,6 +184,16 @@ public class BrowserScreenshotService {
             listener.bind(session);
             Runtime.getRuntime().addShutdownHook(new Thread(session::closeQuietly));
             return session;
+        }
+
+        private static boolean isNoSandboxEnabled() {
+            String value = System.getenv(BROWSER_NO_SANDBOX_ENV);
+            return value != null && (
+                "true".equalsIgnoreCase(value)
+                    || "1".equals(value)
+                    || "yes".equalsIgnoreCase(value)
+                    || "on".equalsIgnoreCase(value)
+            );
         }
 
         boolean isAlive() {
@@ -347,14 +377,6 @@ public class BrowserScreenshotService {
             throw new IOException("浏览器调试端口启动超时: " + port);
         }
 
-        private static int findFreePort() throws IOException {
-            try (ServerSocket socket = new ServerSocket()) {
-                socket.setReuseAddress(true);
-                socket.bind(new InetSocketAddress("127.0.0.1", 0));
-                return socket.getLocalPort();
-            }
-        }
-
         private static void deleteRecursively(Path root) throws IOException {
             if (root == null || !Files.exists(root)) {
                 return;
@@ -369,6 +391,107 @@ public class BrowserScreenshotService {
                         }
                     });
             }
+        }
+    }
+
+    private static final class TemporaryHttpFileServer implements AutoCloseable {
+
+        private final HttpServer server;
+        private final Path rootDir;
+        private final String entryFileName;
+
+        private TemporaryHttpFileServer(HttpServer server, Path rootDir, String entryFileName) {
+            this.server = server;
+            this.rootDir = rootDir;
+            this.entryFileName = entryFileName;
+        }
+
+        static TemporaryHttpFileServer start(Path entryHtmlPath) throws IOException {
+            Path normalizedHtml = entryHtmlPath.toAbsolutePath().normalize();
+            Path rootDir = normalizedHtml.getParent();
+            if (rootDir == null || !Files.exists(normalizedHtml)) {
+                throw new IOException("HTML 文件不存在: " + normalizedHtml);
+            }
+
+            int port = BrowserScreenshotService.findFreePort();
+            HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", port), 0);
+            TemporaryHttpFileServer fileServer = new TemporaryHttpFileServer(server, rootDir, normalizedHtml.getFileName().toString());
+            server.createContext("/", fileServer::handle);
+            server.start();
+            return fileServer;
+        }
+
+        URI entryUri() {
+            return URI.create("http://127.0.0.1:" + server.getAddress().getPort() + "/" + entryFileName);
+        }
+
+        private void handle(HttpExchange exchange) throws IOException {
+            try {
+                if (!"GET".equalsIgnoreCase(exchange.getRequestMethod()) && !"HEAD".equalsIgnoreCase(exchange.getRequestMethod())) {
+                    sendStatus(exchange, 405);
+                    return;
+                }
+
+                String rawPath = exchange.getRequestURI().getPath();
+                String decodedPath = URLDecoder.decode(rawPath == null || rawPath.isBlank() ? "/" : rawPath, StandardCharsets.UTF_8);
+                String relativePath = decodedPath.startsWith("/") ? decodedPath.substring(1) : decodedPath;
+                if (relativePath.isBlank()) {
+                    relativePath = entryFileName;
+                }
+
+                Path target = rootDir.resolve(relativePath).normalize();
+                if (!target.startsWith(rootDir) || !Files.exists(target) || !Files.isRegularFile(target)) {
+                    sendStatus(exchange, 404);
+                    return;
+                }
+
+                Headers headers = exchange.getResponseHeaders();
+                headers.set("Content-Type", contentType(target));
+                long contentLength = Files.size(target);
+                if ("HEAD".equalsIgnoreCase(exchange.getRequestMethod())) {
+                    exchange.sendResponseHeaders(200, -1);
+                    return;
+                }
+
+                exchange.sendResponseHeaders(200, contentLength);
+                try (InputStream inputStream = Files.newInputStream(target, StandardOpenOption.READ)) {
+                    inputStream.transferTo(exchange.getResponseBody());
+                }
+            } finally {
+                exchange.close();
+            }
+        }
+
+        private void sendStatus(HttpExchange exchange, int status) throws IOException {
+            exchange.sendResponseHeaders(status, -1);
+        }
+
+        private String contentType(Path file) {
+            String name = file.getFileName() == null ? "" : file.getFileName().toString().toLowerCase();
+            if (name.endsWith(".html") || name.endsWith(".htm")) {
+                return "text/html; charset=UTF-8";
+            }
+            if (name.endsWith(".png")) {
+                return "image/png";
+            }
+            if (name.endsWith(".jpg") || name.endsWith(".jpeg")) {
+                return "image/jpeg";
+            }
+            if (name.endsWith(".svg")) {
+                return "image/svg+xml";
+            }
+            if (name.endsWith(".css")) {
+                return "text/css; charset=UTF-8";
+            }
+            if (name.endsWith(".js")) {
+                return "application/javascript; charset=UTF-8";
+            }
+            return "application/octet-stream";
+        }
+
+        @Override
+        public void close() {
+            server.stop(0);
         }
     }
 

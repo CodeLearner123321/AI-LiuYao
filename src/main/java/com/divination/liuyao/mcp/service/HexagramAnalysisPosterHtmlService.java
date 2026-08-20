@@ -25,14 +25,14 @@ public class HexagramAnalysisPosterHtmlService {
     /**
      * 组装带断卦结果的海报模板数据，并输出最终 HTML。
      */
-    public RenderedPoster render(Hexagram hexagram, Prediction prediction, AiResult analysisResult, Path backgroundImagePath) {
+    public RenderedPoster render(Hexagram hexagram, Prediction prediction, AiResult analysisResult, String backgroundImageUrl) {
         int posterHeight = estimatePosterHeight(hexagram, analysisResult);
 
         Map<String, Object> data = new HashMap<>();
         data.put("title", "六爻卦象");
         data.put("posterWidth", POSTER_WIDTH);
         data.put("posterHeight", posterHeight);
-        data.put("backgroundImageUrl", backgroundImagePath.toAbsolutePath().normalize().toUri().toString());
+        data.put("backgroundImageUrl", backgroundImageUrl);
         data.put("question", safeText(hexagram.getQuestionDescription(), "未识别"));
         data.put("background", blankToNull(hexagram.getQuestionBackground()));
         data.put("castTimeText", buildDisplayCastTimeText(hexagram));
@@ -247,5 +247,4 @@ public class HexagramAnalysisPosterHtmlService {
         }
     }
 }
-
 

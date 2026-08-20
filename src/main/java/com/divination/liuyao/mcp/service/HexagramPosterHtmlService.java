@@ -20,12 +20,12 @@ public class HexagramPosterHtmlService {
     public static final int POSTER_WIDTH = 1500;
     public static final int POSTER_HEIGHT = 1600;
 
-    public String render(Hexagram hexagram, Prediction prediction, Path backgroundImagePath) {
+    public String render(Hexagram hexagram, Prediction prediction, String backgroundImageUrl) {
         Map<String, Object> data = new HashMap<>();
         data.put("title", "六爻卦象");
         data.put("posterWidth", POSTER_WIDTH);
         data.put("posterHeight", POSTER_HEIGHT);
-        data.put("backgroundImageUrl", backgroundImagePath.toAbsolutePath().normalize().toUri().toString());
+        data.put("backgroundImageUrl", backgroundImageUrl);
         data.put("question", safeText(hexagram.getQuestionDescription(), "未识别"));
         data.put("background", blankToNull(hexagram.getQuestionBackground()));
         data.put("castTimeText", buildDisplayCastTimeText(hexagram));

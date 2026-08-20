@@ -2,6 +2,7 @@ package com.divination.liuyao.mcp.service;
 
 import com.divination.liuyao.pojo.dto.BaZi;
 import com.divination.liuyao.pojo.model.Hexagram;
+import com.divination.liuyao.util.BaZiUtil;
 import java.util.Objects;
 import org.springframework.stereotype.Component;
 
@@ -38,6 +39,9 @@ public class HexagramTextFormatter {
 
         BaZi baZi = hexagram.getBaZi();
         if (baZi == null) {
+            if (hexagram.getLocalDateTime() != null) {
+                return BaZiUtil.getAllByLocalDateTime(hexagram.getLocalDateTime());
+            }
             return null;
         }
 

@@ -77,13 +77,12 @@ public class FileServiceImpl implements FileService {
         validateFile(file, fileInfo);
 
         String fileName = file.getOriginalFilename();
-        // 构造OSS路径
-        String ossPath = fileInfo.getType() + "/" + UserContextHolder.getUsername();
-        String ossUrl;
+        // 构造对象存储路径
+        String objectPath = fileInfo.getType() + "/" + UserContextHolder.getUsername();
         try {
-            ossUrl = OSSUtil.uploadFile(ossPath, fileName, file.getInputStream());
+            OSSUtil.uploadFile(objectPath, fileName, file.getInputStream());
         } catch (Exception e) {
-            log.error("文件上传OSS失败", e);
+            log.error("文件上传对象存储失败", e);
             return null;
         }
         // 填充文件信息
@@ -111,11 +110,7 @@ public class FileServiceImpl implements FileService {
     @Override
     public String downloadFile(Long fileId) {
         FileInfo fileInfo = fileInfoMapper.selectById(fileId);
-        OSSUtil.getFileUrl(BOOK + "/" + fileInfo.getUploaderUsername(), fileInfo.getFileName());
-        String fileUrl = OSSUtil.getFileUrl(BOOK + "/" + fileInfo.getUploaderUsername(), fileInfo.getFileName());
-
-
-        return fileUrl;
+        return OSSUtil.getFileUrl(BOOK + "/" + fileInfo.getUploaderUsername(), fileInfo.getFileName());
     }
     
     @Override

@@ -1,6 +1,5 @@
 # 编译输出
 /target/
-!.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
 
@@ -13,6 +12,7 @@
 /src/main/resources/application-prod.yml
 *.properties
 !example.properties
+!.mvn/wrapper/maven-wrapper.properties
 
 # Java相关
 *.class
@@ -69,7 +69,6 @@ Desktop.ini
 
 # 缓存目录
 .gradle
-.mvn/
 
 # 其他
 node_modules/
