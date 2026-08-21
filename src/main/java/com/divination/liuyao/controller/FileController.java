@@ -12,6 +12,7 @@ import com.divination.liuyao.service.FileService;
 import com.divination.liuyao.util.UserContextHolder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
@@ -33,6 +34,9 @@ import java.util.concurrent.TimeUnit;
 @RequestMapping("/api/file")
 public class FileController {
 
+    @Value("${app.admin-usernames:}")
+    private String adminUsernames;
+
     @Autowired
     private FileService fileService;
     @Autowired
@@ -43,7 +47,7 @@ public class FileController {
      */
     @PostMapping("/upload")
     public RespEntity<Long> uploadFile(@RequestParam("file") MultipartFile file, @ModelAttribute FileInfo fileInfo) {
-        if (!UserContextHolder.isRoot()) {
+        if (!UserContextHolder.isInUsernames(adminUsernames)) {
             return RespEntity.error("无权限上传文件");
         }
         return RespEntity.ok(fileService.uploadFile(file, fileInfo));

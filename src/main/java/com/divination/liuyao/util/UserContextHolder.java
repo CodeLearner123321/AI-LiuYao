@@ -3,7 +3,7 @@ package com.divination.liuyao.util;
 import com.divination.liuyao.pojo.entity.User;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.Objects;
+import java.util.Arrays;
 
 /**
  * 用户上下文持有者，用于在线程中存储和获取当前用户信息
@@ -31,8 +31,12 @@ public class UserContextHolder {
         return userThreadLocal.get();
     }
 
-    public static Boolean isRoot() {
-        return Objects.equals(userThreadLocal.get().getUserName(), "xiaohu");
+    public static boolean isInUsernames(String usernames) {
+        String currentUsername = getUsername();
+        return currentUsername != null && usernames != null
+                && Arrays.stream(usernames.split(","))
+                .map(String::trim)
+                .anyMatch(currentUsername::equals);
     }
     
     /**
@@ -72,4 +76,4 @@ public class UserContextHolder {
     public static void clear() {
         userThreadLocal.remove();
     }
-} 
+}

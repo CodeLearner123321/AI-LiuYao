@@ -6,6 +6,7 @@ CREATE TABLE `task` (
   `pre_amount` decimal(10,2) NOT NULL DEFAULT '0.00' COMMENT '预扣费金额',
   `actual_amount` decimal(10,2) NOT NULL DEFAULT '0.00' COMMENT '实际扣费金额，任务完成后填写',
   `is_charged` tinyint(1) NOT NULL DEFAULT '0' COMMENT '是否已扣费：0-未扣费，1-已扣费',
+  `payment_type` tinyint NOT NULL DEFAULT '2' COMMENT '支付类型：0-免费额度，1-余额，2-用户自定义API',
   `request_params` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci COMMENT '请求参数JSON',
   `result_data` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci COMMENT '结果数据JSON',
   `error_msg` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL COMMENT '错误信息',

@@ -54,7 +54,7 @@ public class AuthService {
             Object storedCode = redisUtil.get(redisKey);
             
             if (storedCode == null || !code.equals(storedCode.toString())) {
-                log.warn("注册验证码错误或已过期，邮箱: {}", email);
+                log.warn("注册验证码错误或已过期");
                 return RespEntity.error("验证码错误或已过期（验证码有效期为5分钟）");
             }
             
@@ -208,7 +208,7 @@ public class AuthService {
             
             // 生成6位随机验证码
             String code = String.format("%06d", (int)(Math.random() * 1000000));
-            log.info("向邮箱 {} 发送验证码: {} 业务类型：{}", email, code, requestType);
+            log.info("向邮箱发送验证码，业务类型：{}", requestType);
             
             // 调用邮件服务发送验证码
             emailService.sendVerificationCode(email, code);
@@ -270,7 +270,7 @@ public class AuthService {
             
             // 生成6位随机验证码
             String code = String.format("%06d", (int)(Math.random() * 1000000));
-            log.info("向手机号 {} 发送验证码: {} 业务类型：{}", phoneNumber, code, requestType);
+            log.info("向手机号发送验证码，业务类型：{}", requestType);
             
             // TODO: 调用短信API发送验证码，这里省略实现
             
@@ -316,7 +316,7 @@ public class AuthService {
             Object storedCode = redisUtil.get(redisKey);
             
             if (storedCode == null || !authCode.equals(storedCode.toString())) {
-                log.warn("修改密码验证码错误或已过期，邮箱: {}", email);
+                log.warn("修改密码验证码错误或已过期");
                 return RespEntity.error("验证码错误或已过期（验证码有效期为5分钟）");
             }
             

@@ -279,6 +279,41 @@ public class AiAnalysisService {
     }
 
     /**
+     * 生成今日运势专用提示词。
+     */
+    public String buildTodayFortunePrompt(Hexagram hexagram, String question, String background) {
+        Map<String, Object> templateParams = new HashMap<>();
+
+        templateParams.put("question", question);
+        templateParams.put("background", background);
+
+        String timeString = null;
+        if(hexagram.getCustomTime() != null && !hexagram.getCustomTime().isEmpty()){
+            timeString = hexagram.getCustomTime();
+        } else if(hexagram.getLocalDateTime() == null && hexagram.getBaZi() != null){
+            timeString = hexagram.getBaZi().toString();
+        } else if(hexagram.getLocalDateTime() != null){
+            timeString = BaZiUtil.getAllByLocalDateTime(hexagram.getLocalDateTime());
+        }
+        templateParams.put("timeString", timeString);
+
+        templateParams.put("guaString", hexagram.getGuaStringByPosition(hexagram.isExistChanged()));
+
+        if(hexagram.getShenSha() != null && !hexagram.getShenSha().isEmpty()){
+            templateParams.put("shenShaString", hexagram.getShenShaString());
+        }
+
+        List<String> yaoStrings = new ArrayList<>();
+        for (int i = 5; i >= 0; i--) {
+            yaoStrings.add(hexagram.getYaoStringByPosition(i, hexagram.isExistChanged()));
+        }
+        templateParams.put("yaoStrings", yaoStrings);
+        templateParams.put("errorCode", ConstantUtil.AI_ERROR_RESULT_CODE);
+
+        return FreemarkerUtil.render("today_fortune_prompt.ftl", templateParams);
+    }
+
+    /**
      * 分析卦象（包含问题和背景）
      */
     public AiResult analyzeHexagram(Hexagram hexagram, CastDto castDto)
@@ -307,6 +342,30 @@ public class AiAnalysisService {
         } catch (Exception e) {
             log.error("AI分析过程中发生错误: ", e);
             throw e; // 重新抛出异常，让全局异常处理器处理
+        }
+    }
+
+    /**
+     * 今日运势分析（复用六爻起卦数据，使用日运专用提示词）。
+     */
+    public AiResult analyzeTodayFortune(Hexagram hexagram, CastDto castDto)
+        throws InterruptedException, NoApiKeyException, InputRequiredException {
+        String question = castDto.getQuestion();
+        String background = castDto.getBackground();
+
+        try {
+            String systemPrompt = FreemarkerUtil.render("liuyao_system_prompt.ftl", new HashMap<>());
+            String prompt = buildTodayFortunePrompt(hexagram, question, background);
+
+            log.debug("准备发送今日运势AI请求，提示词长度: {}", prompt.length());
+            long startTime = System.currentTimeMillis();
+            AiResult response = llmServiceFactory.generateText(systemPrompt, prompt, castDto);
+
+            log.debug("今日运势AI响应成功，响应时间{}", String.format("%.2f", (System.currentTimeMillis() - startTime) / 1000.0));
+            return response;
+        } catch (Exception e) {
+            log.error("今日运势AI分析过程中发生错误: ", e);
+            throw e;
         }
     }
 }

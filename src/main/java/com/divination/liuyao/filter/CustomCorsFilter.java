@@ -1,11 +1,11 @@
 package com.divination.liuyao.filter;
 
-import cn.hutool.jwt.JWT;
-import cn.hutool.jwt.JWTUtil;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.util.concurrent.RateLimiter;
-import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.Ordered;
@@ -32,8 +32,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class CustomCorsFilter implements Filter {
 
 
-    @Value("${jwt.secret}")
-    private String jwtSecret;
+    @Value("${app.cors.allowed-origins:}")
+    private String allowedOrigins;
 
     // 全局限流器，限制系统总体QPS
     private final RateLimiter globalRateLimiter = RateLimiter.create(100.0); // 每秒最多100个请求
@@ -58,8 +58,6 @@ public class CustomCorsFilter implements Filter {
     // 配置参数
     private static final int IP_RATE_LIMIT = 100; // 每个IP每秒最多请求数
     private static final int MAX_REQUESTS_PER_MINUTE = 60; // 每分钟最大请求数
-    //todo 暂时把白名单去掉
-//    private static final String[] WHITELIST_IPS = {"127.0.0.1", "::1"}; // IP白名单
     private static final String[] WHITELIST_IPS = {""}; // IP白名单
 
     @Override
@@ -69,7 +67,10 @@ public class CustomCorsFilter implements Filter {
         HttpServletRequest request = (HttpServletRequest) req;
         
         // 设置CORS响应头
-        configureCorsHeaders(request, response);
+        if (!configureCorsHeaders(request, response)) {
+            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+            return;
+        }
         
         // 如果是预检请求，直接返回200状态码
         if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
@@ -109,12 +110,6 @@ public class CustomCorsFilter implements Filter {
             
             // 检查是否需要加入黑名单
             if (shouldBlacklist(clientIp)) {
-                // 在加入黑名单前，尝试解析请求中的token
-                String token = extractTokenFromRequest(request);
-                if (token != null) {
-                    logTokenInfo(token, clientIp);
-                }
-
                 // 加入黑名单
                 addToBlacklist(clientIp);
                 log.warn("IP {} 已被加入黑名单，访问频率过高", clientIp);
@@ -135,64 +130,30 @@ public class CustomCorsFilter implements Filter {
 
 
     /**
-     * 从请求中提取JWT令牌
-     */
-    private String extractTokenFromRequest(HttpServletRequest request) {
-        String authHeader = request.getHeader("Authorization");
-        if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            return authHeader.substring(7);
-        }
-        return null;
-    }
-
-    /**
-     * 解析并记录令牌信息
-     */
-    private void logTokenInfo(String token, String clientIp) {
-        try {
-            JWT jwt = JWTUtil.parseToken(token);
-            boolean isValid = jwt.setKey(jwtSecret.getBytes(StandardCharsets.UTF_8)).verify();
-
-            // 获取令牌中的关键信息
-            Object userId = jwt.getPayload("userId");
-            Object username = jwt.getPayload(JWT.SUBJECT);
-            Object deviceFingerprint = jwt.getPayload("deviceFingerprint");
-            Object issuedAt = jwt.getPayload(JWT.ISSUED_AT);
-            Object expiresAt = jwt.getPayload(JWT.EXPIRES_AT);
-
-            // 记录可疑用户信息
-            log.warn("可疑用户被加入黑名单 - IP: {}, 令牌有效性: {}, 用户ID: {}, 用户名: {}, 设备指纹: {}, 签发时间: {}, 过期时间: {}",
-                clientIp, isValid, userId, username, deviceFingerprint, issuedAt, expiresAt);
-
-            // 记录完整的令牌载荷，便于后续分析
-            Map<String, Object> payloads = jwt.getPayloads();
-            log.debug("可疑用户令牌完整信息: {}", payloads);
-
-        } catch (Exception e) {
-            // 令牌解析失败，可能是无效令牌或格式错误
-            log.warn("无法解析可疑用户令牌 - IP: {}, 错误: {}", clientIp, e.getMessage());
-        }
-    }
-    
-    /**
      * 配置CORS响应头
      */
-    private void configureCorsHeaders(HttpServletRequest request, HttpServletResponse response) {
-        // 获取请求的Origin
+    private boolean configureCorsHeaders(HttpServletRequest request, HttpServletResponse response) {
         String origin = request.getHeader("Origin");
-        if (origin != null) {
-            // 设置实际的请求源为允许的源
-            response.setHeader("Access-Control-Allow-Origin", origin);
-            // 允许凭证
-            response.setHeader("Access-Control-Allow-Credentials", "true");
-        } else {
-            // 如果没有Origin头，设置为*（不支持凭证）
-            response.setHeader("Access-Control-Allow-Origin", "*");
+        if (origin == null || origin.isBlank()) {
+            return true;
         }
-        
+
+        Set<String> configuredOrigins = Arrays.stream(allowedOrigins.split(","))
+                .map(String::trim)
+                .filter(value -> !value.isEmpty())
+                .collect(Collectors.toSet());
+        if (!configuredOrigins.contains(origin)) {
+            log.warn("Rejected CORS request from origin={}", origin);
+            return false;
+        }
+
+        response.setHeader("Access-Control-Allow-Origin", origin);
+        response.setHeader("Access-Control-Allow-Credentials", "true");
+        response.setHeader("Vary", "Origin");
         response.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
         response.setHeader("Access-Control-Max-Age", "3600");
         response.setHeader("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
+        return true;
     }
     
     /**
@@ -284,4 +245,4 @@ public class CustomCorsFilter implements Filter {
             blacklistCache.getIfPresent(entry.getKey()) == null && 
             ipCountCache.getIfPresent(entry.getKey()) == null);
     }
-} 
+}

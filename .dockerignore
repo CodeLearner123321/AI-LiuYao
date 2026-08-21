@@ -1,0 +1,9 @@
+.git
+.idea
+.vscode
+target
+logs
+data
+uploads
+package
+*.iml

@@ -48,6 +48,7 @@ ai:
             name: DeepSeek-r1
         max-tokens: 2000
         temperature: 0.7
+
     # 阿里百练配置
     dashscope:
         api:
@@ -58,10 +59,31 @@ ai:
         max-tokens: 2000
         temperature: 0.7
 
+# 系统额度支付时使用的默认模型 Key；也可通过 DEFAULT_API_KEY 注入。
+default:
+    api-key: ""
+
 # 邮件服务配置
 email:
     from: your_qq_email@qq.com  # 发件人邮箱，应与spring.mail.username一致
     personal: 爻算云鉴  # 发件人显示名称
+
+app:
+    # 逗号分隔的管理员用户名。留空时默认没有管理员权限。
+    admin-usernames: admin
+    cors:
+        # 逗号分隔的前端来源；生产环境必须替换为实际域名。
+        allowed-origins: http://localhost:5173,http://localhost:8080
+    mcp:
+        api-key: replace_with_a_random_mcp_api_key
+
+# 对象存储使用 MinIO/S3 兼容环境变量配置：
+# MINIO_ENDPOINT=http://localhost:9000
+# MINIO_ACCESS_KEY=minioadmin
+# MINIO_SECRET_KEY=minioadmin
+# MINIO_BUCKET=ai-liuyao
+# MINIO_REGION=us-east-1
+# MINIO_PRESIGNED_URL_EXPIRY_SECONDS=3600
 
 logging:
     level:
@@ -81,4 +103,4 @@ mybatis:
     configuration:
         map-underscore-to-camel-case: true
     type-aliases-package: com.divination.liuyao.entity
-    mapper-locations: classpath:mapper/*.xml 
+    mapper-locations: classpath:mapper/*.xml

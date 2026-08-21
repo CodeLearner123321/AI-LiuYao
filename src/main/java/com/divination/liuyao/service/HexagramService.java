@@ -81,12 +81,12 @@ public class HexagramService {
         String fileName = file.getOriginalFilename();
         User user = UserContextHolder.getUser();
         String username = user.getUserName();
-        String ossPath = "recognizeImage/" + username;
-        String ossUrl;
+        String objectPath = "recognizeImage/" + username;
+        String imageUrl;
         try {
-            ossUrl = OSSUtil.uploadFile(ossPath, fileName, file.getInputStream());
+            imageUrl = OSSUtil.uploadFile(objectPath, fileName, file.getInputStream());
         } catch (Exception e) {
-            log.error("文件上传OSS失败", e);
+            log.error("文件上传对象存储失败", e);
             return new RecognizeImageVo();
         }
 
@@ -99,8 +99,8 @@ public class HexagramService {
 
         RecognizeImageVo recognizeImageVo = new RecognizeImageVo();
         AiResult aiResult = llmServiceFactory.generateTextByImage(ConstantUtil.IMAGE_SYSTEM_PROMPT ,
-                finalPrompt, ossUrl);
-        log.info("AI图片分析结果：" + aiResult.getText());
+                finalPrompt, imageUrl);
+        log.debug("AI图片分析完成，响应文本长度: {}", aiResult.getText() == null ? 0 : aiResult.getText().length());
         BigDecimal price = paymentService.confirmPay(PaymentType.BALANCE_PAYMENT, AITaskType.IMAGE, user.getId(), aiResult);
         Prediction prediction = JsonUtils.fromJson(aiResult.getText(), Prediction.class);
         Hexagram hexagram = calculateLiuYaoByImage(prediction);
@@ -120,7 +120,11 @@ public class HexagramService {
         hexagram.setExistChanged(baGuaVo.getExistChanged());
         hexagram.setShenSha(baGuaVo.getShenSha());
         hexagram.setLocalDateTime(baGuaVo.getLocalDateTime());
+        hexagram.setBaZi(baGuaVo.getBaZi());
         hexagram.setCustomTime(baGuaVo.getCustomTime());
+        hexagram.setQuestionDescription(castDto.getQuestion());
+        hexagram.setQuestionBackground(castDto.getBackground());
+        hexagram.setNumber(castDto.getNumber());
 
         return hexagram;
     }
@@ -152,10 +156,25 @@ public class HexagramService {
 
         baZi.initXunKong();
 
-        BaGuaVo baGuaVo = Hexagram.createBaGuaVoByBagua(
-                BaGua.createBaGuaName(prediction.getGua().getZhuGua()),
-                BaGua.createBaGuaName(prediction.getGua().getBianGua()),
-                baZi);
+        BaGua originalBaGua = BaGua.createBaGuaName(prediction.getGua().getZhuGua());
+        String changedGuaName = prediction.getGua().getBianGua();
+        if (changedGuaName == null || changedGuaName.isBlank()) {
+            changedGuaName = prediction.getGua().getZhuGua();
+        }
+        BaGua changedBaGua = BaGua.createBaGuaName(changedGuaName);
+        if (originalBaGua == null || changedBaGua == null) {
+            throw new IllegalArgumentException("未能匹配识别出的卦名");
+        }
+
+        String customTime = buildImageCustomTime(prediction.getTime());
+        String number = buildImageModeNumber(originalBaGua, changedBaGua);
+
+        BaGuaDto baGuaDto = new BaGuaDto();
+        baGuaDto.setCastType(com.divination.liuyao.assemblies.enums.CastType.IMAGE);
+        baGuaDto.setCustomTime(customTime);
+        baGuaDto.setNumber(number);
+
+        BaGuaVo baGuaVo = Hexagram.createBaGuaVoByNumber2(baGuaDto);
 
         Hexagram hexagram = new Hexagram();
         hexagram.setOriginalBaGua(baGuaVo.getOriginalBaGua());
@@ -174,10 +193,66 @@ public class HexagramService {
             hexagram.setShenSha(null);
         }
         hexagram.setBaZi(baZi);
+        hexagram.setCustomTime(customTime);
         hexagram.setQuestionDescription(prediction.getDescription() == null ? null : prediction.getDescription().getQuestion());
         hexagram.setQuestionBackground(prediction.getDescription() == null ? null : prediction.getDescription().getBackground());
-        hexagram.setNumber(BaGua.getStringByBaGua(baGuaVo.getOriginalBaGua(), baGuaVo.getChangedBaGua()));
+        hexagram.setNumber(number);
         return hexagram;
+    }
+
+    private String buildImageModeNumber(BaGua originalBaGua, BaGua changedBaGua) {
+        String originalNumber = originalBaGua.getId();
+        String changedNumber = changedBaGua.getId();
+        if (originalNumber == null || changedNumber == null
+                || originalNumber.length() != 6 || changedNumber.length() != 6) {
+            throw new IllegalArgumentException("识别出的卦象编号无效");
+        }
+
+        StringBuilder number = new StringBuilder(6);
+        for (int i = 0; i < 6; i++) {
+            char original = originalNumber.charAt(i);
+            char changed = changedNumber.charAt(i);
+            if (original == changed) {
+                number.append(original);
+            } else if (original == '0' && changed == '1') {
+                number.append('2');
+            } else if (original == '1' && changed == '0') {
+                number.append('3');
+            } else {
+                throw new IllegalArgumentException("识别出的卦象编号包含非法爻值");
+            }
+        }
+        return number.toString();
+    }
+
+    private String buildImageCustomTime(Prediction.Time time) {
+        if (time == null) {
+            return null;
+        }
+        StringBuilder builder = new StringBuilder();
+        appendGanzhiTime(builder, time.getYear(), "年");
+        appendGanzhiTime(builder, time.getMonth(), "月");
+        appendGanzhiTime(builder, time.getDay(), "日");
+        appendGanzhiTime(builder, time.getHour(), "时");
+        String text = builder.toString().trim();
+        return text.isEmpty() ? null : text;
+    }
+
+    private void appendGanzhiTime(StringBuilder builder, Prediction.DatePart datePart, String suffix) {
+        if (datePart == null || datePart.getGanzhi() == null) {
+            return;
+        }
+        String tiangan = datePart.getGanzhi().getTiangan();
+        String dizhi = datePart.getGanzhi().getDizhi();
+        if ((tiangan == null || tiangan.isBlank()) && (dizhi == null || dizhi.isBlank())) {
+            return;
+        }
+        if (builder.length() > 0) {
+            builder.append(' ');
+        }
+        builder.append(tiangan == null ? "" : tiangan)
+                .append(dizhi == null ? "" : dizhi)
+                .append(suffix);
     }
 
     private Optional<DiZhi> safeDiZhi(Supplier<String> dizhiSupplier) {

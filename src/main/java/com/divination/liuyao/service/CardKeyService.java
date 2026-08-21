@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -28,10 +29,13 @@ public class CardKeyService {
     
     private final CardKeyMapper cardKeyMapper;
     private final UserMapper userMapper;
+
+    @Value("${app.admin-usernames:}")
+    private String adminUsernames;
     
     /**
      * 生成卡密（批量）
-     * 只有userId=2或userId=1的用户才能生成卡密
+     * 仅配置为管理员的用户才能生成卡密。
      * 
      * @param amount 卡密金额
      * @param count 生成数量
@@ -45,8 +49,7 @@ public class CardKeyService {
             throw new AuthenticationException("用户未登录", 401);
         }
         
-        // 验证权限：只有userId=2或userId=1的用户才能生成卡密
-        if (!userId.equals(2L) && !userId.equals(1L)) {
+        if (!isAdmin()) {
             throw new AuthenticationException("无权限生成卡密", 403);
         }
         
@@ -123,7 +126,7 @@ public class CardKeyService {
     
     /**
      * 根据状态和金额查询卡密列表
-     * 只有userId=2或userId=1的用户才能查询
+     * 仅配置为管理员的用户才能查询。
      * 
      * @param status 卡密状态（可选）
      * @param amount 卡密金额（可选）
@@ -136,8 +139,7 @@ public class CardKeyService {
             throw new AuthenticationException("用户未登录", 401);
         }
         
-        // 验证权限：只有userId=2或userId=1的用户才能查询卡密
-        if (!userId.equals(2L) && !userId.equals(1L)) {
+        if (!isAdmin()) {
             throw new AuthenticationException("无权限查询卡密", 403);
         }
         
@@ -167,6 +169,10 @@ public class CardKeyService {
      */
     private String generateCardCode() {
         return UUID.randomUUID().toString().replace("-", "").toUpperCase();
+    }
+
+    private boolean isAdmin() {
+        return UserContextHolder.isInUsernames(adminUsernames);
     }
 }
 

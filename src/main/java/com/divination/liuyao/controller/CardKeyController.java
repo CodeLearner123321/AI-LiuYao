@@ -31,7 +31,7 @@ public class CardKeyController {
     
     /**
      * 生成卡密
-     * 只有userId=2的用户才能访问
+     * 仅配置为管理员的用户才能访问
      * 
      * @param request 生成卡密请求，包含金额和数量
      * @return 生成的卡密列表
@@ -64,7 +64,7 @@ public class CardKeyController {
     
     /**
      * 查询卡密列表
-     * 只有userId=2或userId=1的用户才能访问
+     * 仅配置为管理员的用户才能访问
      * 
      * @param request 查询卡密请求，包含状态和金额（可选）
      * @return 卡密列表

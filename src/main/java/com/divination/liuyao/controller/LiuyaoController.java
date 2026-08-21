@@ -57,8 +57,11 @@ public class LiuyaoController {
     @Autowired
     private AiAnalysisService aiAnalysisService;
     
-    @Value("${ai.default-llm-service:volcengine}")
+    @Value("${ai.default-llm-service:dashscope}")
     private String defaultLLMService;
+
+    @Value("${app.admin-usernames:}")
+    private String adminUsernames;
 
     /**
      * 时间转换
@@ -162,7 +165,7 @@ public class LiuyaoController {
         try {
             return RespEntity.ok(hexagramService.recognizeTextByImage(file));
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("图片识别失败", e);
             return RespEntity.error("图片识别失败");
         }
     }
@@ -172,7 +175,7 @@ public class LiuyaoController {
      */
     @GetMapping("/permissions")
     public RespEntity<UserPermissionDTO> getUserPermissions() {
-        if(UserContextHolder.isRoot()){
+        if(UserContextHolder.isInUsernames(adminUsernames)){
             UserPermissionDTO userPermissionDTO = new UserPermissionDTO();
             userPermissionDTO.setViewPermissions(Arrays.asList(ViewPermission.UPLOAD_VIEW.getCode()));
             userPermissionDTO.setRole(UserRoleType.ROOT.getCode());
